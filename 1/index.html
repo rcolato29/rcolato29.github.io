@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Project 1</title>
+        <link rel="stylesheet" href="../style.css" />
+        <style>
+            .project-container {
+                max-width: 1000px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+
+            .section {
+                margin-bottom: 40px;
+            }
+
+            .image-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+                margin: 20px 0;
+            }
+
+            .image-pair {
+                text-align: center;
+            }
+
+            .image-pair img {
+                max-width: 100%;
+                height: auto;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                margin: 5px;
+            }
+
+            .image-pair p {
+                font-size: 0.9em;
+                color: #666;
+                margin: 5px 0;
+            }
+
+            .offset-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 20px 0;
+            }
+
+            .offset-table th,
+            .offset-table td {
+                border: 1px solid #ddd;
+                padding: 8px 12px;
+                text-align: left;
+            }
+
+            .offset-table th {
+                background-color: #f5f5f5;
+                font-weight: 600;
+            }
+
+            .code-snippet {
+                background-color: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 4px;
+                padding: 15px;
+                font-family: "Courier New", monospace;
+                font-size: 0.9em;
+                overflow-x: auto;
+                margin: 15px 0;
+            }
+
+            .back-link {
+                display: inline-block;
+                margin-bottom: 30px;
+                padding: 8px 16px;
+                background-color: #6c757d;
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+                font-size: 0.9em;
+            }
+
+            .back-link:hover {
+                background-color: #5a6268;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="project-container">
+            <h1>Project 1: Images of the Russian Empire</h1>
+
+            <div class="section">
+                <h2>Project Overview</h2>
+                <p>
+                    This project implements algorithms to automatically align and colorize
+                    historical glass plate photographs from the Prokudin-Gorskii collection. These
+                    images were captured using three separate colored glass plates (red, green, and
+                    blue), which need to be precisely aligned in order to create a full-color
+                    composite image.
+                </p>
+
+                <p>
+                    Alignment on smaller images involves using normalized cross-correlation (NCC) to
+                    find the optimal alignment offsets for each color channel relative to the blue
+                    channel. For larger images, a smarter search procedure is opted for via an image
+                    pyramid. Initial challenges faced were fixed by cropping the color channels
+                    beforehand, as unrelated pixels near the edge have the ability to interfere with
+                    the NCC scores.
+                </p>
+            </div>
+
+            <div class="section">
+                <h2>Approach</h2>
+                <p>
+                    My implementation uses a coarse-to-fine pyramid approach for efficient
+                    alignment, specifically for large images:
+                </p>
+
+                <ol>
+                    <li>
+                        <strong>Image Preprocessing:</strong> Split the input image into three equal
+                        parts (red channels, green channels, and blue channels) and crop borders by
+                        a predetermined amount to remove artifacts (this amount grows depending on
+                        the size of the image).
+                    </li>
+                    <li>
+                        <strong>Normalized Cross-Correlation:</strong> Use NCC to find the best
+                        alignment between channels. This metric is constructed by flattening each
+                        color channel into vectors, finding the norm of these vectors in order to
+                        normalize, and taking the dot product between two of these normalized
+                        vectors. A higher NCC score corresponds to two color channels that align
+                        more heavily. The highest score is tied to the optimal xy alignments between
+                        two colored glass plates.
+                    </li>
+                    <li>
+                        <strong>Pyramid Alignment:</strong> Start with downsampled images and
+                        progressively work up to full resolution. This involves finding an alignment
+                        estimate on lower-resolution versions of the image, and using this estimate
+                        to put us in the right "ball park" for alignment on higher-resolution
+                        versions of the image. This prevents the computationally intractable
+                        exhaustive search on detailed images that need large search windows.
+                    </li>
+                </ol>
+            </div>
+
+            <div class="section">
+                <h2>Results on Provided Images</h2>
+                <p>
+                    Below are the results of alignment on the provided images, along with the
+                    optimal pixel shift found in the x and y directions:
+                </p>
+
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="out_path/cathedral.jpg" alt="Cathedral - Aligned" />
+                        <p>Cathedral - Successfully aligned</p>
+                        <p>Red: (3, 12), Green: (2, 5)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/church.jpg" alt="Church - Aligned" />
+                        <p>Church - Successfully aligned</p>
+                        <p>Red: (-4, 58), Green: (4, 25)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/harvesters.jpg" alt="Harvesters - Aligned" />
+                        <p>Harvesters - Successfully aligned</p>
+                        <p>Red: (13, 124), Green: (16, 59)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/icon.jpg" alt="Icon - Aligned" />
+                        <p>Icon - Successfully aligned</p>
+                        <p>Red: (23, 89), Green: (17, 40)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/italil.jpg" alt="Italil - Aligned" />
+                        <p>Italil - Successfully aligned</p>
+                        <p>Red: (35, 76), Green: (21, 38)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/lastochikino.jpg" alt="Lastochikino - Aligned" />
+                        <p>Lastochikino - Successfully aligned</p>
+                        <p>Red: (-8, 75), Green: (-2, -2)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/lugano.jpg" alt="Lugano - Aligned" />
+                        <p>Lugano - Successfully aligned</p>
+                        <p>Red: (-29, 92), Green: (-16, 41)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/melons.jpg" alt="Melons - Aligned" />
+                        <p>Melons - Successfully aligned</p>
+                        <p>Red: (12, 178), Green: (9, 82)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/monastery.jpg" alt="Monastery - Aligned" />
+                        <p>Monastery - Successfully aligned</p>
+                        <p>Red: (2, 3), Green: (2, -3)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/self_portrait.jpg" alt="Self Portrait - Aligned" />
+                        <p>Self Portrait - Successfully aligned</p>
+                        <p>Red: (36, 176), Green: (28, 78)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/siren.jpg" alt="Siren - Aligned" />
+                        <p>Siren - Successfully aligned</p>
+                        <p>Red: (-25, 95), Green: (-7, 49)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/three_generations.jpg"
+                            alt="Three Generations - Aligned"
+                        />
+                        <p>Three Generations - Successfully aligned</p>
+                        <p>Red: (10, 111), Green: (14, 53)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/tobolsk.jpg" alt="Tobolsk - Aligned" />
+                        <p>Tobolsk - Successfully aligned</p>
+                        <p>Red: (3, 6), Green: (3, 3)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/emir.jpg" alt="Emir - Aligned" />
+                        <p>Emir - Unsuccessfully aligned</p>
+                        <p>Red: (-285, 98), Green: (24, 49)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Results on Custom Examples</h2>
+                <p>
+                    I selected additional images from the Prokudin-Gorskii collection to get a
+                    better idea of alignment success:
+                </p>
+
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="out_path/camel.jpg" alt="Camel - Custom Example" />
+                        <p>Camel - Successfully aligned</p>
+                        <p>Red: (-1, 6), Green: (0, 3)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/isfandiyar.jpg" alt="Isfandiyar - Custom Example" />
+                        <p>Isfandiyar - Successfully aligned</p>
+                        <p>Red: (0, 6), Green: (1, 2)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/kurmy.jpg" alt="Kurmy - Custom Example" />
+                        <p>Kurmy - Successfully aligned</p>
+                        <p>Red: (-2, 7), Green: (-1, 1)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Algorithm Failures</h2>
+                <p>
+                    The algorithm successfully aligned 13/14 of the provided images. The only image
+                    that was a struggle was "emir.jpg". This is likely due to the differences in
+                    brightness between color channels. In this case, a more clever correlation
+                    metric is needed. However, on all other images, including some custom examples
+                    from the Prokudin-Gorskii collection, the coarse-to-fine pyramid approach worked
+                    great.
+                </p>
+            </div>
+        </div>
+    </body>
+</html>
