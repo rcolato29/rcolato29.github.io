@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Project 2: Fun with Filters and Frequencies</title>
+        <link rel="stylesheet" href="../style.css" />
+        <style>
+            .project-container {
+                max-width: 1000px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+
+            .section {
+                margin-bottom: 40px;
+            }
+
+            .image-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+                margin: 20px 0;
+            }
+
+            .image-grid-3 {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+                margin: 20px 0;
+            }
+
+            .image-pair {
+                text-align: center;
+            }
+
+            .image-pair img {
+                max-width: 100%;
+                height: auto;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                margin: 5px;
+            }
+
+            .image-pair p {
+                font-size: 0.9em;
+                color: #666;
+                margin: 5px 0;
+            }
+
+            .code-snippet {
+                background-color: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 4px;
+                padding: 15px;
+                font-family: "Courier New", monospace;
+                font-size: 0.9em;
+                overflow-x: auto;
+                margin: 15px 0;
+            }
+
+            .before-after {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+                margin: 20px 0;
+            }
+
+            .before-after img {
+                max-width: 100%;
+                height: auto;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+
+            .before-after p {
+                text-align: center;
+                font-weight: 600;
+                margin: 10px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="project-container">
+            <h1>Project 2: Fun with Filters and Frequencies</h1>
+
+            <div class="section">
+                <h2>Project Overview</h2>
+                <p>
+                    This project explores various image processing techniques using filters and
+                    frequency domain operations. The goal is to understand how different kinds of
+                    filters affect images and how we can tweak images in both spatial and frequency
+                    domains in order to see our desired visual effects.
+                </p>
+
+                <p>
+                    Some of the main tasks in this project involve implementing 2-dimensional
+                    convolutions from scratch, deriving the finite difference operator and
+                    derivative of gaussian (DoG) filter. Image blurring, sharpening, hybrid image
+                    creation, as well as multi-resolution blending were all implemented. These
+                    operations demonstrate fundamental concepts in digital image processing and
+                    computer vision.
+                </p>
+            </div>
+
+            <div class="section">
+                <h2>Convolutions from Scratch</h2>
+                <p>
+                    The first part of this project involves implementing convolutions from scratch,
+                    using only NumPy operations. There are multiple ways to do this. Below are two
+                    approaches: a naive approach uses four for loops and a vectorized approach uses
+                    two, where the runtime of the latter is improved significantly.
+                </p>
+
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="/proj2/conv_4.png" alt="Convolutions (Four Loops)" />
+                        <p>Convolutions (Four Loops)</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="/proj2/conv_2.png" alt="Convolutions (Two Loops)" />
+                        <p>Convolutions (Two Loops)</p>
+                    </div>
+                </div>
+
+                <p>
+                    The two loop implementation turns out to be a simplified version of the built-in
+                    scipy.signal.convolve2d function. This function allows you to specify the size
+                    of the output as well as how the boundaries of the image are handled. In my
+                    implementation, all convolution outputs are the same size as the image input,
+                    and all images are zero-padded.
+                </p>
+
+                <p>
+                    I tested my implementation on a picture of myself. Here, I implemented a 9x9 box
+                    filter, as well as finite differences in the x and y directions. The resulting
+                    convolved images are attached below.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="/proj2/diff_op.png" alt="Finite Difference Operators" />
+                        <p>Finite Difference Operators</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/filters.png" alt="Box, D_x, and D_y Filters" />
+                        <p>Box, D_x, and D_y Filters</p>
+                    </div>
+                </div>
+
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/proj2_self_gray.jpg" alt="Grayscale Selfie" />
+                        <p>Grayscale Selfie</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/proj2_self_box.jpg"
+                            alt="Grayscale Selfie with Box Filter"
+                        />
+                        <p>Grayscale Selfie with Box Filter</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/proj2_self_D_x.jpg"
+                            alt="Grayscale Selfie with D_x Filter"
+                        />
+                        <p>Grayscale Selfie with D_x Filter</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/proj2_self_D_y.jpg"
+                            alt="Grayscale Selfie with D_y Filter"
+                        />
+                        <p>Grayscale Selfie with D_y Filter</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Finite Difference Operator</h2>
+                <p>
+                    To showcase the power of finite difference operators, I computed the partial
+                    derivative in x and y of the cameraman image. Then, I computed the binarized
+                    gradient magnitude image.
+                </p>
+
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="/proj2/cameraman.png" alt="Cameraman Image" />
+                        <p>Cameraman Image</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/cameraman_D_x.png"
+                            alt="Cameraman with D_x Filter"
+                        />
+                        <p>Cameraman with D_x Filter</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/cameraman_D_y.png"
+                            alt="Cameraman with D_y Filter"
+                        />
+                        <p>Cameraman with D_y Filter</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/cameraman_edges.png"
+                            alt="Cameraman with Binarized Gradient Magnitude"
+                        />
+                        <p>Cameraman with Binarized Gradient Magnitude</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Derivative of Gaussian (DoG) Filter</h2>
+                <p>
+                    Since having the difference operator alone does nothing to get rid of noise in
+                    the results, I used the Gaussian filter to first blur the image, then compute
+                    the binarized gradient magnitude. By doing this, one can get rid of the noise in
+                    the image and capture the most prominent edges. This can also be done by
+                    creating derivate of gaussian (DoG) filters, where the gaussian is convolved
+                    with D_x and D_y, then used to compute the gradient magnitude image. The results
+                    of both methods are shown below, as well as the filters themselves.
+                </p>
+
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/cameraman_blurred_edges.png"
+                            alt="Cameraman without DoG Filters"
+                        />
+                        <p>Cameraman without DoG Filters</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/cameraman_DoG.png"
+                            alt="Cameraman with DoG Filters"
+                        />
+                        <p>Cameraman with DoG Filters</p>
+                    </div>
+                </div>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/gaussian_kernel.jpg" alt="Gaussian Kernel" />
+                        <p>Gaussian Kernel</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/DoG_x_kernel.jpg" alt="DoG_x Kernel" />
+                        <p>DoG_x Kernel</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/DoG_y_kernel.jpg" alt="DoG_y Kernel" />
+                        <p>DoG_y Kernel</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Image "Sharpening"</h2>
+                <p>
+                    Now that we can do basic convolutions on images, it is now possible to take a
+                    blurry image and "sharpen" it. This is done using the unsharp masking technique.
+                    In essense, you subtract the blurred image from the original image, and this
+                    acts as a high pass filter. These high frequencies are added to the original
+                    image to get a "sharp" look. This process can be combined into a single
+                    convolution operation called the unsharp mask filter. Results of this filter on
+                    multiple images are shown below.
+                </p>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="/proj2/taj.jpg" alt="The Taj Mahal" />
+                        <p>The Taj Mahal</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/sharpened-taj.jpg"
+                            alt="The Taj Mahal, High Frequencies"
+                        />
+                        <p>The Taj Mahal, High Frequencies</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/taj.jpg" alt="The Taj Mahal, Sharpened" />
+                        <p>The Taj Mahal, Sharpened</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="/proj2/berk2.jpg" alt="A Campus Image" />
+                        <p>A Campus Image</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/berk2.jpg" alt="A Campus Image, Sharpened" />
+                        <p>A Campus Image, Sharpened</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/regular_show_house.jpg"
+                            alt="The House from Regular Show"
+                        />
+                        <p>The House from Regular Show</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/regular_show_house.jpg"
+                            alt="The House from Regular Show, Sharpened"
+                        />
+                        <p>The House from Regular Show, Sharpened</p>
+                    </div>
+                </div>
+
+                <p>
+                    You can also take an image, blur it, and try to sharpen it again. It's difficult
+                    to recover the original image, but you can get pretty close. Here is an example
+                    of that:
+                </p>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="/proj2/walter.jpeg" alt="Walter" />
+                        <p>Walter</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/walter_blurred.jpeg" alt="Walter" />
+                        <p>Walter, Blurred</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/walter_blurred_sharpened.jpeg" alt="Walter" />
+                        <p>Walter, Blurred -> Sharpened</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Hybrid Images</h2>
+                <p>
+                    Now that we can derive low-pass and high-pass filters to blur and sharpen images
+                    respectively, it is possible to create hybrid images, or images that change
+                    based on the viewing distance. This is possible by taking the high frequency
+                    portion of one image and stacking it on top of the lower frequency portion of
+                    another image. Below is an example of a hybrid image on Derek and Nutmeg.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="/proj2/DerekPicture.jpg" alt="Derek" />
+                        <p>Derek</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/nutmeg.jpg" alt="Nutmeg" />
+                        <p>Nutmeg</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/derek_nutmeg.jpg" alt="Nutmeg" />
+                        <p>The Hybrid Image between Derek and Nutmeg</p>
+                    </div>
+                </div>
+
+                <p>
+                    Here is another example between two very different breeds of dogs. The low
+                    frequency image is of a Golden Retriever, and the high frequency image is of an
+                    English Bulldog. Try looking at the image from up-close to see the bulldog, then
+                    step back about 5-10 feet (and/or squint your eyes) to see the Golden Retriever.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="/proj2/golden.jpeg" alt="A Golden Retriever" />
+                        <p>A Golden Retriever</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/bulldog.jpg" alt="A Golden Retriever" />
+                        <p>An English Bulldog</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/golden_bulldog.jpg" alt="Nutmeg" />
+                        <p>The Hybrid Image between a Golden Retriever and an English Bulldog</p>
+                    </div>
+                </div>
+
+                <p>
+                    Finally, here is an example of a hybrid image between two presidents: George
+                    Washington and Thomas Jefferson. This time, I have included images documenting
+                    the entire process, including intermediate images showing the log magnitude of
+                    the Fourier Transform. Notice how lower-frequency images have more activity near
+                    the center, whereas higher-frequency images have more activity near the edges.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="/proj2/washington.jpg" alt="George Washington" />
+                        <p>George Washington</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/jefferson.jpeg" alt="Thomas Jefferson" />
+                        <p>Thomas Jefferson</p>
+                    </div>
+
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/washington_log_magnitude.jpg"
+                            alt="Fourier Transform Log Magnitude of George Washington"
+                        />
+                        <p>Fourier Transform Log Magnitude of George Washington</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/jefferson_log_magnitude.jpg"
+                            alt="Fourier Transform Log Magnitude of Thomas Jefferson"
+                        />
+                        <p>Fourier Transform Log Magnitude of Thomas Jefferson</p>
+                    </div>
+
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/washington_blurred.jpg"
+                            alt="Blurred George Washington"
+                        />
+                        <p>Blurred George Washington</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/jefferson_sharpened.jpg"
+                            alt="Sharpened Thomas Jefferson"
+                        />
+                        <p>Sharpened Thomas Jefferson</p>
+                    </div>
+
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/washington_blurred_log_magnitude.jpg"
+                            alt="Fourier Transform Log Magnitude of Blurred George Washington"
+                        />
+                        <p>Fourier Transform Log Magnitude of Blurred George Washington</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/jefferson_sharpened_log_magnitude.jpg"
+                            alt="Fourier Transform Log Magnitude of Sharpened Thomas Jefferson"
+                        />
+                        <p>Fourier Transform Log Magnitude of Sharpened Thomas Jefferson</p>
+                    </div>
+
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/washington_jefferson.jpg"
+                            alt="Hybrid Image between George Washington and Thomas Jefferson"
+                        />
+                        <p>The Hybrid Image between George Washington and Thomas Jefferson</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/washington_jefferson_log_magnitude.jpg"
+                            alt="Fourier Transform Log Magnitude of the Hybrid Image between George Washington and Thomas Jefferson"
+                        />
+                        <p>
+                            Fourier Transform Log Magnitude of the Hybrid Image between George
+                            Washington and Thomas Jefferson
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <h2>Gaussian and Laplacian stacks</h2>
+                <p>
+                    Now, the goal is to implement mutli-resolution blending, or joining two images
+                    across a smooth seam, called an image spline. This is done by computing this
+                    seam for multiple bands across the entire range of image frequencies. This
+                    ensures a smooth transition between the two images.
+                </p>
+
+                <p>
+                    First, we need to implement Gaussian stacks, which are a series of images where
+                    the Gaussian filter is successively applied, one after the other (without
+                    subsampling). Here is an example of these operations on a car:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/car-gaussian-0.jpg" alt="car-gaussian-0" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/car-gaussian-1.jpg" alt="car-gaussian-1" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/car-gaussian-2.jpg" alt="car-gaussian-2" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/car-gaussian-3.jpg" alt="car-gaussian-3" />
+                    </div>
+                </div>
+
+                <p>
+                    Next, we need to implement Laplacian stacks, which are comprised of the image
+                    differences between two adjacent images in the Gaussian stack. Note that we
+                    capture the lowest frequencies by taking the last image in the Gaussian stack.
+                </p>
+
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/car-laplacian-0.jpg" alt="car-laplacian-0" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/car-laplacian-1.jpg" alt="car-laplacian-1" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/car-laplacian-2.jpg" alt="car-laplacian-2" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/car-gaussian-3.jpg" alt="car-gaussian-3" />
+                    </div>
+                </div>
+
+                <p>
+                    Finally, we can generate the oraple, which is just a multi-resolution blend
+                    between an apple and an orange.
+                </p>
+
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/apple-0.jpg" alt="apple-0" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/orange-0.jpg" alt="orange-0" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/oraple-0.jpg" alt="oraple-0" />
+                    </div>
+                </div>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/apple-1.jpg" alt="apple-1" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/orange-1.jpg" alt="orange-1" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/oraple-1.jpg" alt="oraple-1" />
+                    </div>
+                </div>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/apple-3.jpg" alt="apple-3" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/orange-3.jpg" alt="orange-3" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/oraple-3.jpg" alt="oraple-3" />
+                    </div>
+                </div>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/apple-4.jpg" alt="apple-4" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/orange-4.jpg" alt="orange-4" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/oraple-4.jpg" alt="oraple-4" />
+                    </div>
+                </div>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/apple-final.jpg" alt="apple-final" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/orange-final.jpg" alt="orange-final" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/oraple-final.jpg" alt="oraple-final" />
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <h2>Multiresolution Blending</h2>
+                <p>
+                    Now, we have the tools to blend a variety of images together. Furthermore, these
+                    two images do not necessarily have to be joined across a vertical seam, like the
+                    oraple show below. Here are two examples of multi-resolution blends across a
+                    circular seam.
+                </p>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="/proj2/apple.jpeg" alt="An Apple" />
+                        <p>An Apple</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/orange.jpeg" alt="An Orange" />
+                        <p>An Orange</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/oraple-final.jpg" alt="The Oraple" />
+                        <p>The Oraple</p>
+                    </div>
+                </div>
+
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="/proj2/tree.jpg" alt="A Tree" />
+                        <p>A Tree</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/desert.jpg" alt="A Desert" />
+                        <p>A Desert</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/out_path/desert_tree.jpg" alt="A Tree in the Desert" />
+                        <p>A Tree in the Desert</p>
+                    </div>
+                </div>
+
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="/proj2/jordan.jpg" alt="Michael Jordan Crying" />
+                        <p>Michael Jordan Crying</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="/proj2/sun.jpg" alt="The Sun" />
+                        <p>The Sun</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="/proj2/out_path/crying-jordan.jpg"
+                            alt="The Jordan Crying Sun Meme"
+                        />
+                        <p>The Jordan Crying Sun Meme</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
