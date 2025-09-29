@@ -112,13 +112,13 @@
 
                 <div class="image-grid">
                     <div class="image-pair">
-                        <img src="/proj2/conv_4.png" alt="Convolutions (Four Loops)" />
+                        <img src="in_path/conv_4.png" alt="Convolutions (Four Loops)" />
                         <p>Convolutions (Four Loops)</p>
                     </div>
                 </div>
                 <div class="image-grid">
                     <div class="image-pair">
-                        <img src="/proj2/conv_2.png" alt="Convolutions (Two Loops)" />
+                        <img src="in_path/conv_2.png" alt="Convolutions (Two Loops)" />
                         <p>Convolutions (Two Loops)</p>
                     </div>
                 </div>
@@ -138,37 +138,37 @@
                 </p>
                 <div class="image-grid">
                     <div class="image-pair">
-                        <img src="/proj2/diff_op.png" alt="Finite Difference Operators" />
+                        <img src="in_path/diff_op.png" alt="Finite Difference Operators" />
                         <p>Finite Difference Operators</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/filters.png" alt="Box, D_x, and D_y Filters" />
+                        <img src="in_path/filters.png" alt="Box, D_x, and D_y Filters" />
                         <p>Box, D_x, and D_y Filters</p>
                     </div>
                 </div>
 
                 <div class="image-grid">
                     <div class="image-pair">
-                        <img src="/proj2/out_path/proj2_self_gray.jpg" alt="Grayscale Selfie" />
+                        <img src="out_path/proj2_self_gray.jpg" alt="Grayscale Selfie" />
                         <p>Grayscale Selfie</p>
                     </div>
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/proj2_self_box.jpg"
+                            src="out_path/proj2_self_box.jpg"
                             alt="Grayscale Selfie with Box Filter"
                         />
                         <p>Grayscale Selfie with Box Filter</p>
                     </div>
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/proj2_self_D_x.jpg"
+                            src="out_path/proj2_self_D_x.jpg"
                             alt="Grayscale Selfie with D_x Filter"
                         />
                         <p>Grayscale Selfie with D_x Filter</p>
                     </div>
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/proj2_self_D_y.jpg"
+                            src="out_path/proj2_self_D_y.jpg"
                             alt="Grayscale Selfie with D_y Filter"
                         />
                         <p>Grayscale Selfie with D_y Filter</p>
@@ -186,26 +186,20 @@
 
                 <div class="image-grid">
                     <div class="image-pair">
-                        <img src="/proj2/cameraman.png" alt="Cameraman Image" />
+                        <img src="in_path/cameraman.png" alt="Cameraman Image" />
                         <p>Cameraman Image</p>
                     </div>
                     <div class="image-pair">
-                        <img
-                            src="/proj2/out_path/cameraman_D_x.png"
-                            alt="Cameraman with D_x Filter"
-                        />
+                        <img src="out_path/cameraman_D_x.png" alt="Cameraman with D_x Filter" />
                         <p>Cameraman with D_x Filter</p>
                     </div>
                     <div class="image-pair">
-                        <img
-                            src="/proj2/out_path/cameraman_D_y.png"
-                            alt="Cameraman with D_y Filter"
-                        />
+                        <img src="out_path/cameraman_D_y.png" alt="Cameraman with D_y Filter" />
                         <p>Cameraman with D_y Filter</p>
                     </div>
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/cameraman_edges.png"
+                            src="out_path/cameraman_edges.png"
                             alt="Cameraman with Binarized Gradient Magnitude"
                         />
                         <p>Cameraman with Binarized Gradient Magnitude</p>
@@ -222,36 +216,34 @@
                     the image and capture the most prominent edges. This can also be done by
                     creating derivate of gaussian (DoG) filters, where the gaussian is convolved
                     with D_x and D_y, then used to compute the gradient magnitude image. The results
-                    of both methods are shown below, as well as the filters themselves.
+                    of both methods are shown below, as well as the filters themselves
+                    (kernel_size=25, sigma=5).
                 </p>
 
                 <div class="image-grid">
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/cameraman_blurred_edges.png"
+                            src="out_path/cameraman_blurred_edges.png"
                             alt="Cameraman without DoG Filters"
                         />
                         <p>Cameraman without DoG Filters</p>
                     </div>
                     <div class="image-pair">
-                        <img
-                            src="/proj2/out_path/cameraman_DoG.png"
-                            alt="Cameraman with DoG Filters"
-                        />
+                        <img src="out_path/cameraman_DoG.png" alt="Cameraman with DoG Filters" />
                         <p>Cameraman with DoG Filters</p>
                     </div>
                 </div>
                 <div class="image-grid-3">
                     <div class="image-pair">
-                        <img src="/proj2/out_path/gaussian_kernel.jpg" alt="Gaussian Kernel" />
+                        <img src="out_path/gaussian_kernel.jpg" alt="Gaussian Kernel" />
                         <p>Gaussian Kernel</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/DoG_x_kernel.jpg" alt="DoG_x Kernel" />
+                        <img src="out_path/DoG_x_kernel.jpg" alt="DoG_x Kernel" />
                         <p>DoG_x Kernel</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/DoG_y_kernel.jpg" alt="DoG_y Kernel" />
+                        <img src="out_path/DoG_y_kernel.jpg" alt="DoG_y Kernel" />
                         <p>DoG_y Kernel</p>
                     </div>
                 </div>
@@ -263,47 +255,63 @@
                     Now that we can do basic convolutions on images, it is now possible to take a
                     blurry image and "sharpen" it. This is done using the unsharp masking technique.
                     In essense, you subtract the blurred image from the original image, and this
-                    acts as a high pass filter. These high frequencies are added to the original
-                    image to get a "sharp" look. This process can be combined into a single
+                    acts as a high pass filter (alpha=5). These high frequencies are added to the
+                    original image to get a "sharp" look. This process can be combined into a single
                     convolution operation called the unsharp mask filter. Results of this filter on
                     multiple images are shown below.
                 </p>
                 <div class="image-grid-3">
                     <div class="image-pair">
-                        <img src="/proj2/taj.jpg" alt="The Taj Mahal" />
+                        <img src="in_path/taj.jpg" alt="The Taj Mahal" />
                         <p>The Taj Mahal</p>
                     </div>
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/sharpened-taj.jpg"
+                            src="out_path/taj-highfreqs.jpg"
                             alt="The Taj Mahal, High Frequencies"
                         />
                         <p>The Taj Mahal, High Frequencies</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/taj.jpg" alt="The Taj Mahal, Sharpened" />
+                        <img src="out_path/taj.jpg" alt="The Taj Mahal, Sharpened" />
                         <p>The Taj Mahal, Sharpened</p>
                     </div>
                 </div>
-                <div class="image-grid">
+                <div class="image-grid-3">
                     <div class="image-pair">
-                        <img src="/proj2/berk2.jpg" alt="A Campus Image" />
+                        <img src="in_path/berk2.jpg" alt="A Campus Image" />
                         <p>A Campus Image</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/berk2.jpg" alt="A Campus Image, Sharpened" />
-                        <p>A Campus Image, Sharpened</p>
+                        <img
+                            src="out_path/berk2-highfreqs.jpg"
+                            alt="A Campus Image, High Frequencies"
+                        />
+                        <p>A Campus Image, High Frequencies</p>
                     </div>
                     <div class="image-pair">
+                        <img src="out_path/berk2.jpg" alt="A Campus Image, Sharpened" />
+                        <p>A Campus Image, Sharpened</p>
+                    </div>
+                </div>
+                <div class="image-grid-3">
+                    <div class="image-pair">
                         <img
-                            src="/proj2/regular_show_house.jpg"
+                            src="in_path/regular_show_house.jpg"
                             alt="The House from Regular Show"
                         />
                         <p>The House from Regular Show</p>
                     </div>
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/regular_show_house.jpg"
+                            src="out_path/regular_show_house-highfreqs.jpg"
+                            alt="The House from Regular Show, High Frequencies"
+                        />
+                        <p>The House from Regular Show, High Frequencies</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/regular_show_house.jpg"
                             alt="The House from Regular Show, Sharpened"
                         />
                         <p>The House from Regular Show, Sharpened</p>
@@ -317,15 +325,15 @@
                 </p>
                 <div class="image-grid-3">
                     <div class="image-pair">
-                        <img src="/proj2/walter.jpeg" alt="Walter" />
+                        <img src="in_path/walter.jpeg" alt="Walter" />
                         <p>Walter</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/walter_blurred.jpeg" alt="Walter" />
+                        <img src="out_path/walter_blurred.jpeg" alt="Walter" />
                         <p>Walter, Blurred</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/walter_blurred_sharpened.jpeg" alt="Walter" />
+                        <img src="out_path/walter_blurred_sharpened.jpeg" alt="Walter" />
                         <p>Walter, Blurred -> Sharpened</p>
                     </div>
                 </div>
@@ -340,19 +348,17 @@
                     portion of one image and stacking it on top of the lower frequency portion of
                     another image. Below is an example of a hybrid image on Derek and Nutmeg.
                 </p>
-                <div class="image-grid">
+                <div class="image-grid-3">
                     <div class="image-pair">
-                        <img src="/proj2/DerekPicture.jpg" alt="Derek" />
+                        <img src="in_path/DerekPicture.jpg" alt="Derek" />
                         <p>Derek</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/nutmeg.jpg" alt="Nutmeg" />
+                        <img src="in_path/nutmeg.jpg" alt="Nutmeg" />
                         <p>Nutmeg</p>
                     </div>
-                </div>
-                <div class="image-grid">
                     <div class="image-pair">
-                        <img src="/proj2/out_path/derek_nutmeg.jpg" alt="Nutmeg" />
+                        <img src="out_path/derek_nutmeg.jpg" alt="Nutmeg" />
                         <p>The Hybrid Image between Derek and Nutmeg</p>
                     </div>
                 </div>
@@ -363,19 +369,17 @@
                     English Bulldog. Try looking at the image from up-close to see the bulldog, then
                     step back about 5-10 feet (and/or squint your eyes) to see the Golden Retriever.
                 </p>
-                <div class="image-grid">
+                <div class="image-grid-3">
                     <div class="image-pair">
-                        <img src="/proj2/golden.jpeg" alt="A Golden Retriever" />
+                        <img src="in_path/golden.jpeg" alt="A Golden Retriever" />
                         <p>A Golden Retriever</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/bulldog.jpg" alt="A Golden Retriever" />
+                        <img src="in_path/bulldog.jpg" alt="A Golden Retriever" />
                         <p>An English Bulldog</p>
                     </div>
-                </div>
-                <div class="image-grid">
                     <div class="image-pair">
-                        <img src="/proj2/out_path/golden_bulldog.jpg" alt="Nutmeg" />
+                        <img src="out_path/golden_bulldog.jpg" alt="Nutmeg" />
                         <p>The Hybrid Image between a Golden Retriever and an English Bulldog</p>
                     </div>
                 </div>
@@ -389,24 +393,24 @@
                 </p>
                 <div class="image-grid">
                     <div class="image-pair">
-                        <img src="/proj2/washington.jpg" alt="George Washington" />
+                        <img src="in_path/washington.jpg" alt="George Washington" />
                         <p>George Washington</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/jefferson.jpeg" alt="Thomas Jefferson" />
+                        <img src="in_path/jefferson.jpeg" alt="Thomas Jefferson" />
                         <p>Thomas Jefferson</p>
                     </div>
 
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/washington_log_magnitude.jpg"
+                            src="out_path/washington_log_magnitude.jpg"
                             alt="Fourier Transform Log Magnitude of George Washington"
                         />
                         <p>Fourier Transform Log Magnitude of George Washington</p>
                     </div>
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/jefferson_log_magnitude.jpg"
+                            src="out_path/jefferson_log_magnitude.jpg"
                             alt="Fourier Transform Log Magnitude of Thomas Jefferson"
                         />
                         <p>Fourier Transform Log Magnitude of Thomas Jefferson</p>
@@ -414,14 +418,14 @@
 
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/washington_blurred.jpg"
+                            src="out_path/washington_blurred.jpg"
                             alt="Blurred George Washington"
                         />
                         <p>Blurred George Washington</p>
                     </div>
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/jefferson_sharpened.jpg"
+                            src="out_path/jefferson_sharpened.jpg"
                             alt="Sharpened Thomas Jefferson"
                         />
                         <p>Sharpened Thomas Jefferson</p>
@@ -429,14 +433,14 @@
 
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/washington_blurred_log_magnitude.jpg"
+                            src="out_path/washington_blurred_log_magnitude.jpg"
                             alt="Fourier Transform Log Magnitude of Blurred George Washington"
                         />
                         <p>Fourier Transform Log Magnitude of Blurred George Washington</p>
                     </div>
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/jefferson_sharpened_log_magnitude.jpg"
+                            src="out_path/jefferson_sharpened_log_magnitude.jpg"
                             alt="Fourier Transform Log Magnitude of Sharpened Thomas Jefferson"
                         />
                         <p>Fourier Transform Log Magnitude of Sharpened Thomas Jefferson</p>
@@ -444,14 +448,14 @@
 
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/washington_jefferson.jpg"
+                            src="out_path/washington_jefferson.jpg"
                             alt="Hybrid Image between George Washington and Thomas Jefferson"
                         />
                         <p>The Hybrid Image between George Washington and Thomas Jefferson</p>
                     </div>
                     <div class="image-pair">
                         <img
-                            src="/proj2/out_path/washington_jefferson_log_magnitude.jpg"
+                            src="out_path/washington_jefferson_log_magnitude.jpg"
                             alt="Fourier Transform Log Magnitude of the Hybrid Image between George Washington and Thomas Jefferson"
                         />
                         <p>
@@ -477,16 +481,16 @@
                 </p>
                 <div class="image-grid">
                     <div class="image-pair">
-                        <img src="/proj2/out_path/car-gaussian-0.jpg" alt="car-gaussian-0" />
+                        <img src="out_path/car-gaussian-0.jpg" alt="car-gaussian-0" />
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/car-gaussian-1.jpg" alt="car-gaussian-1" />
+                        <img src="out_path/car-gaussian-1.jpg" alt="car-gaussian-1" />
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/car-gaussian-2.jpg" alt="car-gaussian-2" />
+                        <img src="out_path/car-gaussian-2.jpg" alt="car-gaussian-2" />
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/car-gaussian-3.jpg" alt="car-gaussian-3" />
+                        <img src="out_path/car-gaussian-3.jpg" alt="car-gaussian-3" />
                     </div>
                 </div>
 
@@ -498,16 +502,16 @@
 
                 <div class="image-grid">
                     <div class="image-pair">
-                        <img src="/proj2/out_path/car-laplacian-0.jpg" alt="car-laplacian-0" />
+                        <img src="out_path/car-laplacian-0.jpg" alt="car-laplacian-0" />
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/car-laplacian-1.jpg" alt="car-laplacian-1" />
+                        <img src="out_path/car-laplacian-1.jpg" alt="car-laplacian-1" />
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/car-laplacian-2.jpg" alt="car-laplacian-2" />
+                        <img src="out_path/car-laplacian-2.jpg" alt="car-laplacian-2" />
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/car-gaussian-3.jpg" alt="car-gaussian-3" />
+                        <img src="out_path/car-gaussian-3.jpg" alt="car-gaussian-3" />
                     </div>
                 </div>
 
@@ -518,57 +522,57 @@
 
                 <div class="image-grid-3">
                     <div class="image-pair">
-                        <img src="/proj2/out_path/apple-0.jpg" alt="apple-0" />
+                        <img src="out_path/apple-0.jpg" alt="apple-0" />
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/orange-0.jpg" alt="orange-0" />
+                        <img src="out_path/orange-0.jpg" alt="orange-0" />
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/oraple-0.jpg" alt="oraple-0" />
-                    </div>
-                </div>
-                <div class="image-grid-3">
-                    <div class="image-pair">
-                        <img src="/proj2/out_path/apple-1.jpg" alt="apple-1" />
-                    </div>
-                    <div class="image-pair">
-                        <img src="/proj2/out_path/orange-1.jpg" alt="orange-1" />
-                    </div>
-                    <div class="image-pair">
-                        <img src="/proj2/out_path/oraple-1.jpg" alt="oraple-1" />
+                        <img src="out_path/oraple-0.jpg" alt="oraple-0" />
                     </div>
                 </div>
                 <div class="image-grid-3">
                     <div class="image-pair">
-                        <img src="/proj2/out_path/apple-3.jpg" alt="apple-3" />
+                        <img src="out_path/apple-1.jpg" alt="apple-1" />
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/orange-3.jpg" alt="orange-3" />
+                        <img src="out_path/orange-1.jpg" alt="orange-1" />
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/oraple-3.jpg" alt="oraple-3" />
-                    </div>
-                </div>
-                <div class="image-grid-3">
-                    <div class="image-pair">
-                        <img src="/proj2/out_path/apple-4.jpg" alt="apple-4" />
-                    </div>
-                    <div class="image-pair">
-                        <img src="/proj2/out_path/orange-4.jpg" alt="orange-4" />
-                    </div>
-                    <div class="image-pair">
-                        <img src="/proj2/out_path/oraple-4.jpg" alt="oraple-4" />
+                        <img src="out_path/oraple-1.jpg" alt="oraple-1" />
                     </div>
                 </div>
                 <div class="image-grid-3">
                     <div class="image-pair">
-                        <img src="/proj2/out_path/apple-final.jpg" alt="apple-final" />
+                        <img src="out_path/apple-3.jpg" alt="apple-3" />
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/orange-final.jpg" alt="orange-final" />
+                        <img src="out_path/orange-3.jpg" alt="orange-3" />
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/oraple-final.jpg" alt="oraple-final" />
+                        <img src="out_path/oraple-3.jpg" alt="oraple-3" />
+                    </div>
+                </div>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="out_path/apple-4.jpg" alt="apple-4" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/orange-4.jpg" alt="orange-4" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/oraple-4.jpg" alt="oraple-4" />
+                    </div>
+                </div>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="out_path/apple-final.jpg" alt="apple-final" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/orange-final.jpg" alt="orange-final" />
+                    </div>
+                    <div class="image-pair">
+                        <img src="out_path/oraple-final.jpg" alt="oraple-final" />
                     </div>
                 </div>
             </div>
@@ -576,54 +580,51 @@
                 <h2>Multiresolution Blending</h2>
                 <p>
                     Now, we have the tools to blend a variety of images together. Furthermore, these
-                    two images do not necessarily have to be joined across a vertical seam, like the
-                    oraple show below. Here are two examples of multi-resolution blends across a
-                    circular seam.
+                    two images do not necessarily have to be joined across a vertical seam like the
+                    oraple shownn below. Here are two examples of multi-resolution blends across
+                    non-linear seams (e.g. circular).
                 </p>
                 <div class="image-grid-3">
                     <div class="image-pair">
-                        <img src="/proj2/apple.jpeg" alt="An Apple" />
+                        <img src="in_path/apple.jpeg" alt="An Apple" />
                         <p>An Apple</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/orange.jpeg" alt="An Orange" />
+                        <img src="in_path/orange.jpeg" alt="An Orange" />
                         <p>An Orange</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/oraple-final.jpg" alt="The Oraple" />
+                        <img src="out_path/oraple-final.jpg" alt="The Oraple" />
                         <p>The Oraple</p>
                     </div>
                 </div>
 
-                <div class="image-grid-3">
+                <!-- <div class="image-grid-3">
                     <div class="image-pair">
-                        <img src="/proj2/tree.jpg" alt="A Tree" />
+                        <img src="in_path/tree.jpg" alt="A Tree" />
                         <p>A Tree</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/desert.jpg" alt="A Desert" />
+                        <img src="in_path/desert.jpg" alt="A Desert" />
                         <p>A Desert</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/out_path/desert_tree.jpg" alt="A Tree in the Desert" />
+                        <img src="out_path/desert_tree.jpg" alt="A Tree in the Desert" />
                         <p>A Tree in the Desert</p>
                     </div>
-                </div>
+                </div> -->
 
                 <div class="image-grid-3">
                     <div class="image-pair">
-                        <img src="/proj2/jordan.jpg" alt="Michael Jordan Crying" />
+                        <img src="in_path/jordan.jpg" alt="Michael Jordan Crying" />
                         <p>Michael Jordan Crying</p>
                     </div>
                     <div class="image-pair">
-                        <img src="/proj2/sun.jpg" alt="The Sun" />
+                        <img src="in_path/sun.jpg" alt="The Sun" />
                         <p>The Sun</p>
                     </div>
                     <div class="image-pair">
-                        <img
-                            src="/proj2/out_path/crying-jordan.jpg"
-                            alt="The Jordan Crying Sun Meme"
-                        />
+                        <img src="out_path/crying-jordan.jpg" alt="The Jordan Crying Sun Meme" />
                         <p>The Jordan Crying Sun Meme</p>
                     </div>
                 </div>
