@@ -107,9 +107,22 @@
                     The first part of this project involves implementing convolutions from scratch,
                     using only NumPy operations. There are multiple ways to do this. Below are two
                     approaches: a naive approach uses four for loops and a vectorized approach uses
-                    two, where the runtime of the latter is improved significantly.
+                    two, where the runtime of the latter is improved significantly. In both cases,
+                    the process is as follows: pad the images with zeros, flip the kernel (this
+                    distinguishes convolutions from cross-correlation), iterate through the entire
+                    image in row-major order, sum up the elementwise products between the image and
+                    the kernel within each window, return the convolved image.
                 </p>
 
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="in_path/convolution_formula.png"
+                            alt="The Formula for Discrete Convolutions"
+                        />
+                        <p>The Formula for Discrete Convolutions</p>
+                    </div>
+                </div>
                 <div class="image-grid">
                     <div class="image-pair">
                         <img src="in_path/conv_4.png" alt="Convolutions (Four Loops)" />
@@ -181,9 +194,23 @@
                 <p>
                     To showcase the power of finite difference operators, I computed the partial
                     derivative in x and y of the cameraman image. Then, I computed the binarized
-                    gradient magnitude image.
+                    gradient magnitude image, for which I needed to qualitatively compute an
+                    appropriate threshold. Ultimately, I ended up choosing 0.3: values closer to 0.2
+                    were too lenient and ended up showing a lot of the grass edges, which were not
+                    of any interest, and values closer to 0.4 were too harsh and ended up removing
+                    many of the important edges, such at those seen on the coat of the man and on
+                    the legs of the camera.
                 </p>
 
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="in_path/gradient_magnitude.png"
+                            alt="The Formula for the Gradient Magnitude of an Image"
+                        />
+                        <p>The Formula for the Gradient Magnitude of an Image</p>
+                    </div>
+                </div>
                 <div class="image-grid">
                     <div class="image-pair">
                         <img src="in_path/cameraman.png" alt="Cameraman Image" />
@@ -210,16 +237,21 @@
             <div class="section">
                 <h2>Derivative of Gaussian (DoG) Filter</h2>
                 <p>
-                    Since having the difference operator alone does nothing to get rid of noise in
-                    the results, I used the Gaussian filter to first blur the image, then compute
-                    the binarized gradient magnitude. By doing this, one can get rid of the noise in
-                    the image and capture the most prominent edges. This can also be done by
-                    creating derivate of gaussian (DoG) filters, where the gaussian is convolved
-                    with D_x and D_y, then used to compute the gradient magnitude image. The results
-                    of both methods are shown below, as well as the filters themselves
-                    (kernel_size=25, sigma=5).
+                    Since having the difference operator alone has some difficulties getting rid of
+                    the noise in the results, I used the Gaussian filter to first blur the image,
+                    then compute the binarized gradient magnitude. By doing this, one can get rid of
+                    the noise in the image and capture the most prominent edges. This can also be
+                    done by creating derivate of gaussian (DoG) filters, where the gaussian is
+                    convolved with D_x and D_y, then used to compute the gradient magnitude image.
+                    The results of both methods are shown below (which achieve very similar
+                    results), as well as the filters themselves. For the parameters of the Gaussian
+                    filter, I ended up choosing the kernel size to be 25 and the sigma to be 5; A
+                    larger kernel size equates to a larger blurring window during convolutions, and
+                    a larger sigma value means that the kernel's underlying Gaussian distribution
+                    has more spread, which means that the blur is more pronounced. I found that
+                    these values gave me enough blur in order to effectively reduce a lot of the
+                    noise.
                 </p>
-
                 <div class="image-grid">
                     <div class="image-pair">
                         <img
@@ -254,12 +286,27 @@
                 <p>
                     Now that we can do basic convolutions on images, it is now possible to take a
                     blurry image and "sharpen" it. This is done using the unsharp masking technique.
-                    In essense, you subtract the blurred image from the original image, and this
-                    acts as a high pass filter (alpha=5). These high frequencies are added to the
-                    original image to get a "sharp" look. This process can be combined into a single
-                    convolution operation called the unsharp mask filter. Results of this filter on
-                    multiple images are shown below.
+                    The idea is to construct a high-pass filter in order to extract the highest
+                    frequencies of an image, which make the image look sharp. This high-pass filter
+                    is derived by subtracting the blurred image from the original image. These high
+                    frequencies are added to the original image to get a sharp look. You can adjust
+                    the intensity of the sharpness by scaling these high frequencies by a parameter,
+                    alpha. In the examples that follow, alpha was chosen to be 5, which strikes a
+                    balance between modest sharpening and the distorted "deep-fried" look associated
+                    with higher parameter values. In addition, this entire process can be combined
+                    into a single convolution operation called the unsharp mask filter, which is the
+                    result of the rightmost equality in the derivation below. Attached are results
+                    of the unsharp masking on a variety of images.
                 </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="in_path/unsharp_mask_filter.png"
+                            alt="The Derivation of the Unsharp Mask Filter"
+                        />
+                        <p>The Derivation of the Unsharp Mask Filter</p>
+                    </div>
+                </div>
                 <div class="image-grid-3">
                     <div class="image-pair">
                         <img src="in_path/taj.jpg" alt="The Taj Mahal" />
@@ -319,9 +366,9 @@
                 </div>
 
                 <p>
-                    You can also take an image, blur it, and try to sharpen it again. It's difficult
-                    to recover the original image, but you can get pretty close. Here is an example
-                    of that:
+                    You can also take an image, blur it, and try to sharpen it again. It turns out
+                    that by have a kernel size of 9, sigma of 1, and alpha of 3, you can get pretty
+                    close to the original image. Here is an example of that:
                 </p>
                 <div class="image-grid-3">
                     <div class="image-pair">
@@ -346,7 +393,12 @@
                     respectively, it is possible to create hybrid images, or images that change
                     based on the viewing distance. This is possible by taking the high frequency
                     portion of one image and stacking it on top of the lower frequency portion of
-                    another image. Below is an example of a hybrid image on Derek and Nutmeg.
+                    another image. In order to find the optimal cutoff frequencies and achieve the
+                    best resulting hybrid images, I chose the following parameters for blurring the
+                    first image and sharpening the second: kernel size = 25, alpha = 3, sigma1 = 5,
+                    sigma2 = 5. After much experimentation, I found that this specific configuration
+                    of parameters made both images noticable at their respective viewing distances.
+                    Below is an example of a hybrid image on Derek and Nutmeg.
                 </p>
                 <div class="image-grid-3">
                     <div class="image-pair">
@@ -387,9 +439,11 @@
                 <p>
                     Finally, here is an example of a hybrid image between two presidents: George
                     Washington and Thomas Jefferson. This time, I have included images documenting
-                    the entire process, including intermediate images showing the log magnitude of
-                    the Fourier Transform. Notice how lower-frequency images have more activity near
-                    the center, whereas higher-frequency images have more activity near the edges.
+                    the entire process, such as blurred and sharpened images, as well as showing the
+                    log magnitude of the Fourier Transform for each of these images (aside: both
+                    images already came pre-aligned). Notice how lower-frequency images have more
+                    activity near the center, whereas higher-frequency images have more activity
+                    near the edges.
                 </p>
                 <div class="image-grid">
                     <div class="image-pair">
@@ -466,17 +520,35 @@
                 </div>
             </div>
             <div class="section">
-                <h2>Gaussian and Laplacian stacks</h2>
+                <h2>Gaussian Stacks, Laplacian Stacks, and Multiresolution Blending</h2>
                 <p>
-                    Now, the goal is to implement mutli-resolution blending, or joining two images
+                    Now, the goal is to implement multi-resolution blending, or joining two images
                     across a smooth seam, called an image spline. This is done by computing this
-                    seam for multiple bands across the entire range of image frequencies. This
-                    ensures a smooth transition between the two images.
+                    seam for multiple bands across the entire range of image frequencies. The
+                    process is quite involved, and is as follows: create laplacian stacks for both
+                    images, then create a gaussian stack for the mask (which will blur the seam and
+                    make the transition smooth). Now, on a layer-by-layer basis, add the
+                    multiplication of the blurred mask and the lth image of image 1's laplacian
+                    stack to the multiplication of the blurred mask's complement and the lth image
+                    of image 2's laplacian stack (this step is outlined in the formula below).
+                    Finally, sum up all the levels of resulting image blends to generate the final,
+                    blended image. This entire process is necessary in order to ensure that a smooth
+                    transition between the two images is created.
                 </p>
 
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="in_path/image_blending.png"
+                            alt="The Formula for the lth Layer of the Blended Image"
+                        />
+                        <p>The Formula for the lth Layer of the Blended Image</p>
+                    </div>
+                </div>
+
                 <p>
-                    First, we need to implement Gaussian stacks, which are a series of images where
-                    the Gaussian filter is successively applied, one after the other (without
+                    The first step is implementing Gaussian stacks, which are a series of images
+                    where the Gaussian filter is successively applied, one after the other (without
                     subsampling). Here is an example of these operations on a car:
                 </p>
                 <div class="image-grid">
@@ -517,7 +589,13 @@
 
                 <p>
                     Finally, we can generate the oraple, which is just a multi-resolution blend
-                    between an apple and an orange.
+                    between an apple and an orange. The entire process is displayed below: each row
+                    represents a layer of the mutliresolution blend, where the left image is the
+                    mask applied to image 1, the middle image is the mask complement applied to
+                    image 2, and the right image is the addition of the two. As you move down the
+                    rows, you also move down in the frequency bands of the image. The bottom-most
+                    row shows the resulting blends of that image's respective column, and the bottom
+                    right image is the final result.
                 </p>
 
                 <div class="image-grid-3">
@@ -577,12 +655,14 @@
                 </div>
             </div>
             <div class="section">
-                <h2>Multiresolution Blending</h2>
                 <p>
-                    Now, we have the tools to blend a variety of images together. Furthermore, these
-                    two images do not necessarily have to be joined across a vertical seam like the
-                    oraple shownn below. Here are two examples of multi-resolution blends across
-                    non-linear seams (e.g. circular).
+                    Now, we have the tools to blend a variety of images together. Further, these two
+                    images do not have to be joined across a vertical seam like the oraple. You can
+                    also construct a circular seam, which is generated by specifying a radius and
+                    zeroing out all pixels in the mask that are further than the radius away from
+                    the image center. This is more involved than the vertical seam, which simply
+                    zeroes out all pixels in the mask that are on the right-half of the image. Here
+                    are some examples of multi-resolution blends across both types of seams:
                 </p>
                 <div class="image-grid-3">
                     <div class="image-pair">
@@ -599,24 +679,24 @@
                     </div>
                 </div>
 
-                <!-- <div class="image-grid-3">
+                <div class="image-grid-3">
                     <div class="image-pair">
-                        <img src="in_path/tree.jpg" alt="A Tree" />
-                        <p>A Tree</p>
+                        <img src="in_path/pokeball.png" alt="A Poke Ball" />
+                        <p>A Poke Ball</p>
                     </div>
                     <div class="image-pair">
-                        <img src="in_path/desert.jpg" alt="A Desert" />
-                        <p>A Desert</p>
+                        <img src="in_path/greatball.png" alt="A Great Ball" />
+                        <p>A Great Ball</p>
                     </div>
                     <div class="image-pair">
-                        <img src="out_path/desert_tree.jpg" alt="A Tree in the Desert" />
-                        <p>A Tree in the Desert</p>
+                        <img src="out_path/hybrid_ball.jpg" alt="A Hybrid Ball" />
+                        <p>A Hybrid Ball</p>
                     </div>
-                </div> -->
+                </div>
 
                 <div class="image-grid-3">
                     <div class="image-pair">
-                        <img src="in_path/jordan.jpg" alt="Michael Jordan Crying" />
+                        <img src="in_path/crying_jordan.png" alt="Michael Jordan Crying" />
                         <p>Michael Jordan Crying</p>
                     </div>
                     <div class="image-pair">
@@ -624,8 +704,11 @@
                         <p>The Sun</p>
                     </div>
                     <div class="image-pair">
-                        <img src="out_path/crying-jordan.jpg" alt="The Jordan Crying Sun Meme" />
-                        <p>The Jordan Crying Sun Meme</p>
+                        <img
+                            src="out_path/crying_jordan_sun.jpg"
+                            alt="The Jordan Crying Sun Meme"
+                        />
+                        <p>The Jordan Crying Sun Meme (radius=32)</p>
                     </div>
                 </div>
             </div>
