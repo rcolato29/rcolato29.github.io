@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Project 3: Image Warping and Mosaicing</title>
+        <link rel="stylesheet" href="../style.css" />
+        <style>
+            .project-container {
+                max-width: 1000px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+
+            .section {
+                margin-bottom: 40px;
+            }
+
+            .image-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+                margin: 20px 0;
+            }
+
+            .image-grid-3 {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+                margin: 20px 0;
+            }
+
+            .image-pair {
+                text-align: center;
+            }
+
+            .image-pair img {
+                max-width: 100%;
+                height: auto;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                margin: 5px;
+            }
+
+            .image-pair p {
+                font-size: 0.9em;
+                color: #666;
+                margin: 5px 0;
+            }
+
+            .span-2 {
+                grid-column: span 2;
+            }
+
+            /* Full-width block inside image grids */
+            .full-row {
+                grid-column: 1 / -1;
+            }
+
+            /* Matrix formatting */
+            .matrix-block {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                padding: 16px 18px;
+                border: 1px solid #e0e0e0;
+                border-radius: 6px;
+                background: #f9fafb;
+            }
+
+            .matrix-caption {
+                font-weight: 600;
+                color: #2c3e50;
+            }
+
+            .matrix {
+                position: relative;
+                display: grid;
+                grid-template-columns: repeat(3, auto);
+                gap: 10px 18px;
+                padding: 10px 22px;
+                font-family: "Courier New", monospace;
+                font-size: 0.95em;
+                color: #333;
+            }
+
+            .matrix::before,
+            .matrix::after {
+                content: "";
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                width: 10px;
+            }
+
+            .matrix::before {
+                left: 0;
+                border-left: 3px solid #c7ccd1;
+                border-top: 3px solid #c7ccd1;
+                border-bottom: 3px solid #c7ccd1;
+                border-right: none;
+                border-radius: 4px 0 0 4px;
+            }
+
+            .matrix::after {
+                right: 0;
+                border-right: 3px solid #c7ccd1;
+                border-top: 3px solid #c7ccd1;
+                border-bottom: 3px solid #c7ccd1;
+                border-left: none;
+                border-radius: 0 4px 4px 0;
+            }
+
+            .mrow {
+                display: contents;
+            }
+
+            .mrow span {
+                min-width: 36px;
+                text-align: right;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="project-container">
+            <h1>Project 3A: Image Warping and Mosaicing</h1>
+
+            <div class="section">
+                <h2>Project Overview</h2>
+                <p>
+                    This project implements image warping using homographies, which are maps between
+                    a set of points in one image and a set of points in another. These homographies
+                    are found using a system of linear equations, which are meant to relate
+                    respective points in the two images together. We also build mosaics by fixing a
+                    center of projection, capturing two overlapping angles of a views, computing a
+                    warped image using a homography, projecting this warped image onto a base image,
+                    and blending the two images together to create a composite panoramic image. We
+                    go into significant detail on both the image warping and mosaicing processes in
+                    the sections to follow, supplemented with ample image examples.
+                </p>
+            </div>
+
+            <div class="section">
+                <h2>Shoot the Pictures</h2>
+                <p>
+                    The first thing to do is to gather the images that we will need to compute
+                    homographies on and stitch together. These images need to be captured in a very
+                    specific way: the center of projection (COP) needs to be fixed. The overlap
+                    between the images must also be between 40%-70% for the best results. With this
+                    in mind, we have compiled a few pairs of images that are suitable for our future
+                    tasks.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="in_path/vlsb_L.jpg" alt="Valley Life Sciences Building L" />
+                        <p>Valley Life Sciences Building (Left)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="in_path/vlsb_R.jpg" alt="Valley Life Sciences Building R" />
+                        <p>Valley Life Sciences Building (Right)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="in_path/california_L.jpg" alt="California Hall L" />
+                        <p>California Hall (Left)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="in_path/california_R.jpg" alt="California Hall R" />
+                        <p>California Hall (Right)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="in_path/doe_L.jpg" alt="Doe Memorial Library L" />
+                        <p>Doe Memorial Library (Left)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="in_path/doe_R.jpg" alt="Doe Memorial Library R" />
+                        <p>Doe Memorial Library (Right)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Recover Homographies</h2>
+                <p>
+                    In order to warp images, a transformation must be constructed. In particular,
+                    the transformation is a homography, or a 3x3 matrix that maps one pair of points
+                    into another pair of points. This matrix has 8 degrees of freedom, and is of the
+                    form p' = Hp. The systems of equations for a single pair of points (x, y) ->
+                    (x', y') is as follows: xa + yb + c - xx'g - yx'h = x' and xd + ye + f - xy'g -
+                    yy'h = y'. This creates 2 equations for 8 unknowns, and in order for the system
+                    to be solvable, we need at least 8 equations for 8 unknowns (but preferrably
+                    more). Therefore, in order to produce a homography, we need to specify at least
+                    4 correspondences, after which we will be able to solve the system of linear
+                    equations Ah = b (where h is the 8x1 vector of unknowns) using least squares
+                    (find the h that satisfies min||Ah - b||^2). Below are the point correspondences
+                    for pairs of images, as well as the computed homographies.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="in_path/vlsb_L_points.jpg"
+                            alt="Valley Life Sciences Building Correspondences L"
+                        />
+                        <p>Valley Life Sciences Building Correspondences (Left)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="in_path/vlsb_R_points.jpg"
+                            alt="Valley Life Sciences Building Correspondences R"
+                        />
+                        <p>Valley Life Sciences Building Correspondences (Right)</p>
+                    </div>
+                    <div class="matrix-block full-row">
+                        <div class="matrix-caption">H_vlsb</div>
+                        <div class="matrix">
+                            <div class="mrow">
+                                <span>2.9</span><span>-1.3e-1</span><span>-6.13e3</span>
+                            </div>
+                            <div class="mrow">
+                                <span>8.05e-1</span><span>2.39</span><span>-2.36e3</span>
+                            </div>
+                            <div class="mrow">
+                                <span>4.71e-4</span><span>-1.54e-5</span><span>1</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="in_path/california_L_points.jpg"
+                            alt="California Hall Correspondences L"
+                        />
+                        <p>California Hall Correspondences (Left)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="in_path/california_R_points.jpg"
+                            alt="California Hall Correspondences R"
+                        />
+                        <p>California Hall Correspondences (Right)</p>
+                    </div>
+                    <div class="matrix-block full-row">
+                        <div class="matrix-caption">H_california</div>
+                        <div class="matrix">
+                            <div class="mrow">
+                                <span>2.17</span><span>-2.39e-1</span><span>-3.83e3</span>
+                            </div>
+                            <div class="mrow">
+                                <span>6.3e-1</span><span>1.78</span><span>-1.62e3</span>
+                            </div>
+                            <div class="mrow">
+                                <span>3.06e-4</span><span>-3.05e-5</span><span>1</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="in_path/doe_L_points.jpg"
+                            alt="Doe Memorial Library Correspondences L"
+                        />
+                        <p>Doe Memorial Library Correspondences (Left)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="in_path/doe_R_points.jpg"
+                            alt="Doe Memorial Library Correspondences R"
+                        />
+                        <p>Doe Memorial Library Correspondences (Right)</p>
+                    </div>
+                    <div class="matrix-block full-row">
+                        <div class="matrix-caption">H_doe</div>
+                        <div class="matrix">
+                            <div class="mrow">
+                                <span>1.93</span><span>-1.98e-1</span><span>-2.8e3</span>
+                            </div>
+                            <div class="mrow">
+                                <span>5.24e-1</span><span>1.55</span><span>-1.14e3</span>
+                            </div>
+                            <div class="mrow">
+                                <span>2.44e-4</span><span>-3.49e-5</span><span>1</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Warp the Images</h2>
+                <p>
+                    Given the homography for a given pair of images, be able to actually carry out
+                    an image warp. In order to prevent the presence of holes (where no pixels land)
+                    after our transformation, we apply inverse warping (send pixels to their source
+                    locations via the homographic map). Given this, we can interpolate the resulting
+                    continuous-valued pixels in two ways: nearest neighbor interpolation and
+                    bilinear interpolation. For nearest neighbor interpolation, we simply round
+                    coordinates (which may land in between pixel values after the transformation) to
+                    the nearest pixel value. For bilinear interpolation, we find the value of a
+                    pixel by finding the weighted average of four neighboring pixels (in our case,
+                    we take the four surrounding pixels that create a square). The resulting images
+                    for both methods are shown below. Notice how marginal the differences are
+                    between the two methods. However, nearest neighbor interpolation was noticably
+                    faster to compute. Given the fact that the benefits of bilinear interpolation
+                    are barely noticable, we opt for using NN interpolation for the remainder of
+                    this project. Below are examples of rectification on difference images, where a
+                    rectangular figure was captured at an angle, and then recovered using an images
+                    warp via a homography.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="in_path/door.jpg" alt="Door" />
+                        <p>Door</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="in_path/door_points.jpg" alt="Door Correspondences" />
+                        <p>Door Correspondences</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/door_nn.jpg"
+                            alt="Warped Door via Nearest Neighbor Interpolation"
+                        />
+                        <p>Warped Door via Nearest Neighbor Interpolation</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/door_mask_nn.jpg"
+                            alt="Warped Door Mask via Nearest Neighbor Interpolation"
+                        />
+                        <p>Warped Door Mask via Nearest Neighbor Interpolation</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/door_bil.jpg"
+                            alt="Warped Door via Bilinear Interpolation"
+                        />
+                        <p>Warped Door via Bilinear Interpolation</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/door_mask_bil.jpg"
+                            alt="Warped Door Mask via Bilinear Interpolation"
+                        />
+                        <p>Warped Door Mask via Bilinear Interpolation</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="in_path/campanile.jpg" alt="The Campanile" />
+                        <p>The Campanile</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="in_path/campanile_points.jpg"
+                            alt="The Campanile Correspondences"
+                        />
+                        <p>The Campanile Correspondences</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/campanile_nn.jpg"
+                            alt="Warped Campanile via Nearest Neighbor Interpolation"
+                        />
+                        <p>Warped Campanile via Nearest Neighbor Interpolation</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/campanile_mask_nn.jpg"
+                            alt="Warped Campanile Mask via Nearest Neighbor Interpolation"
+                        />
+                        <p>Warped Campanile Mask via Nearest Neighbor Interpolation</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/campanile_bil.jpg"
+                            alt="Warped Campanile via Bilinear Interpolation"
+                        />
+                        <p>Warped Campanile via Bilinear Interpolation</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/campanile_mask_bil.jpg"
+                            alt="Warped Campanile Mask via Bilinear Interpolation"
+                        />
+                        <p>Warped Campanile Mask via Bilinear Interpolation</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Blend the Images into a Mosaic</h2>
+                <p>
+                    In order to build our mosaics, we need to first compute a homography between a
+                    given reference image and the image we wish to warp towards that reference
+                    image. Once we know what this transformation is, we can construct the boundary
+                    of the warped image by finding the coordinates where the homography sends its
+                    corners (this is done to ensure that the warped image fits on the canvas). Then,
+                    we warp via the inverse homography, where we check where each pixel in the
+                    output canvas came from. Any pixels from within the image bounds gets assigned a
+                    value using nearest neighbor interpolation. In addition, a binary mask is
+                    creates which denote the pixels that contain the actual warped image. Once this
+                    is done, we want to create a smooth blend between the two images. We soften the
+                    binary mask computed for the warped image using a distance transform (pixels
+                    near the edges are blurrier). The composite image is then created by computing a
+                    weighted average for each pixel, where we sum up the intensity values by their
+                    respective alpha values, keeping track of the sum of weights. We then normalize
+                    each pixel by dividing the summed intensities by the summed weights. This allows
+                    for appropriate pixel intensities in the region where the two images overlap.
+                    The end result is a panorama-like blend of two images; multiple instance of such
+                    on various buildings around the UC Berkeley campus can be found below.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="in_path/vlsb_L.jpg" alt="Valley Life Sciences Building (Left)" />
+                        <p>Valley Life Sciences Building (Left)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="in_path/vlsb_R.jpg" alt="Valley Life Sciences Building (Right)" />
+                        <p>Valley Life Sciences Building (Right)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="in_path/vlsb_L_points.jpg"
+                            alt="Valley Life Sciences Building Correspondences L"
+                        />
+                        <p>Valley Life Sciences Building Correspondences (Left)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="in_path/vlsb_R_points.jpg"
+                            alt="Valley Life Sciences Building Correspondences R"
+                        />
+                        <p>Valley Life Sciences Building Correspondences (Right)</p>
+                    </div>
+                    <div class="image-pair span-2">
+                        <img
+                            src="out_path/vlsb_mosaic.jpg"
+                            alt="Valley Life Sciences Building Mosaic"
+                        />
+                        <p>Valley Life Sciences Building Mosaic</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="in_path/california_L.jpg" alt="California Hall (Left)" />
+                        <p>California Hall (Left)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="in_path/california_R.jpg" alt="California Hall (Right)" />
+                        <p>California Hall (Right)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="in_path/california_L_points.jpg"
+                            alt="California Hall Correspondences L"
+                        />
+                        <p>California Hall Correspondences (Left)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="in_path/california_R_points.jpg"
+                            alt="California Hall Correspondences R"
+                        />
+                        <p>California Hall Correspondences (Right)</p>
+                    </div>
+                    <div class="image-pair span-2">
+                        <img src="out_path/california_mosaic.jpg" alt="California Hall Mosaic" />
+                        <p>California Hall Mosaic</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="in_path/doe_L.jpg" alt="Doe Memorial Library (Left)" />
+                        <p>Doe Memorial Library (Left)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="in_path/doe_R.jpg" alt="Doe Memorial Libraryl (Right)" />
+                        <p>Doe Memorial Library (Right)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="in_path/doe_L_points.jpg"
+                            alt="Doe Memorial Library Correspondences L"
+                        />
+                        <p>Doe Memorial Library Correspondences (Left)</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="in_path/doe_R_points.jpg"
+                            alt="Doe Memorial Library Correspondences R"
+                        />
+                        <p>Doe Memorial Library Correspondences (Right)</p>
+                    </div>
+                    <div class="image-pair span-2">
+                        <img src="out_path/doe_mosaic.jpg" alt="Doe Memorial Library Mosaic" />
+                        <p>Doe Memorial Library Mosaic</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
