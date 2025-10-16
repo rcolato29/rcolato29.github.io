@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Project 3: Image Warping and Mosaicing</title>
+        <title>Project 3</title>
         <link rel="stylesheet" href="../style.css" />
         <style>
             .project-container {
@@ -50,12 +50,10 @@
                 grid-column: span 2;
             }
 
-            /* Full-width block inside image grids */
             .full-row {
                 grid-column: 1 / -1;
             }
 
-            /* Matrix formatting */
             .matrix-block {
                 display: flex;
                 flex-direction: column;
@@ -123,7 +121,7 @@
     </head>
     <body>
         <div class="project-container">
-            <h1>Project 3A: Image Warping and Mosaicing</h1>
+            <h1>Project 3: (Auto)stiching and Photo Mosaics</h1>
 
             <div class="section">
                 <h2>Project Overview</h2>
@@ -134,9 +132,12 @@
                     respective points in the two images together. We also build mosaics by fixing a
                     center of projection, capturing two overlapping angles of a views, computing a
                     warped image using a homography, projecting this warped image onto a base image,
-                    and blending the two images together to create a composite panoramic image. We
-                    go into significant detail on both the image warping and mosaicing processes in
-                    the sections to follow, supplemented with ample image examples.
+                    and blending the two images together to create a composite panoramic image. In
+                    the latter portion of the project, we transition to creating these mosaics
+                    automatically by implementing and improving upon known corner detecting and
+                    matching algorithms. We go into significant detail on the image warping and
+                    mosaicing processes (both manual and automatic) in the sections to follow,
+                    supplemented with ample image examples.
                 </p>
             </div>
 
@@ -491,6 +492,257 @@
                     <div class="image-pair span-2">
                         <img src="out_path/doe_mosaic.jpg" alt="Doe Memorial Library Mosaic" />
                         <p>Doe Memorial Library Mosaic</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Harris Corner Detection</h2>
+                <p>
+                    Now we transition to a new effort to stitch images automatically. The rest of
+                    this webpage roughly follows the paper "Multi-Image Matching using Multi-Scale
+                    Oriented Patches" by Brown et al. The first step in this endeavor is to try to
+                    detect corners automatically, so that we know which points to include for our
+                    homography. The Harris Corner Detector is a solid first approach. This algorithm
+                    computes the corner strength at a particular window by analyzing local
+                    gradients, specifically in the x and y direction. These gradients are used to
+                    construct the second moment matrix, where if the top left and bottom right
+                    entries are large with the other two being zero, then a window is said to
+                    contain a corner. This makes intuitive sense, since a corner is characterized by
+                    dramatic changes in the gradient in both directions. One can also examine the
+                    eigenvalues of the matrix in order to detect corners. I used the provided
+                    get_harris_corners function, which calls the corner_harris and peak_local_max
+                    functions imported from skimage. I set my window size to be 3 pixels, and my
+                    min_distance parameter in peak_local_max to be 10 pixels, in order to make the
+                    corners less densely packed. Finally, I discarded all corners within 20 pixels
+                    from the image border in order to avoid noisy detections. The resulting Harris
+                    corners on an image of the Valley Life Sciences Building can be seen below.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="in_path/second_moment.png"
+                            alt="The Second Moment Matrix of an Image Window"
+                        />
+                        <p>The Second Moment Matrix of an Image Window</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="in_path/corner_response.png"
+                            alt="Corner Strength Function to Locate Points of Interest"
+                        />
+                        <p>Corner Strength Function to Locate Points of Interest</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="out_path/vlsb_L_harris.jpg"
+                            alt="Harris Corner Detection on VLSB"
+                        />
+                        <p>Harris Corner Detection on VLSB</p>
+                    </div>
+                </div>
+                <p>
+                    Notice how there are way too many detected corners, especially in parts of the
+                    image that are very detailed. I could increase the threshold to classify the
+                    image as a corner by manually putting more stringent requirements on the
+                    eigenvalues, but I choose to opt for a more sophisticated approach via Adaptive
+                    Non-Maximal Suppression, or ANMS. The process works as follows: for each
+                    computed Harris corner x_i, find the minimum distance to another Harris corner
+                    x_j such that the strength of x_i is strictly less than 0.9 * the strength of
+                    x_j. The value 0.9, called the robustness factor, is chosen to make sure that
+                    the current Harris corner has a large enough radius before encountering another
+                    noticably stronger corner. Once all suppression radii are chosen, we take the
+                    points corresponding to the 500 largest radii and use them as the new corners.
+                    This ensures an even spread of corners while also taking into account their
+                    strength. The much improved result given by ANMS can be seen on the same image
+                    below.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="in_path/suppression_radius.png"
+                            alt="The Minimum Suppression Radius for ANMS"
+                        />
+                        <p>The Minimum Suppression Radius for ANMS</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="out_path/vlsb_L_ANMS.jpg"
+                            alt="ANMS (n_ip = 500 Points) on VLSB"
+                        />
+                        <p>ANMS (500 Points of Interest) on VLSB</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Feature Descriptor Extraction</h2>
+                <p>
+                    Now that we have 500 points of interest on an image via ANMS, we need to be able
+                    to construct a sufficient local description for each corner that will aid with
+                    point matching. We do this by extracting feature descriptors for each corner.
+                    The process goes like this: take a 40x40 window around a corner and downsample
+                    to an 8x8 patch. This downsampled patch is meant to discard the fine details of
+                    the large window in order to capture the overarching structure around the point.
+                    Once this is done, normalize the patch in order to provide robustness against
+                    changes in lighting and contrast, which is achieved by subtracting by the mean
+                    of the patch and dividing by the standard deviation. We construct these feature
+                    descriptors for 10 random corners in an image, which can be seen on 3 seperate
+                    images down below.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="out_path/vlsb_L_descs.jpg"
+                            alt="8x8 Feature Descriptors from the Valley Life Sciences Building"
+                        />
+                        <p>8x8 Feature Descriptors from the Valley Life Sciences Building</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="out_path/california_L_descs.jpg"
+                            alt="8x8 Feature Descriptors from California Hall"
+                        />
+                        <p>8x8 Feature Descriptors from California Hall</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="out_path/doe_L_descs.jpg"
+                            alt="8x8 Feature Descriptors from Doe Memorial Library"
+                        />
+                        <p>8x8 Feature Descriptors from Doe Memorial Library</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Feature Matching</h2>
+                <p>
+                    Given 500 feature descriptors for each image, we will now attempt to associate
+                    points between two images by matching their corresponding feature descriptors. A
+                    first attempt to do this could involve naively matching feature descriptors
+                    based on the L2 distance, but we find that this creates many false positives
+                    where features are repetitive. Thus, we turn to Lowe's Ratio Test, which works
+                    as follows: For each feature descriptor in the first image, find the two nearest
+                    neighbors in the second image based on Euclidean distance, call them e_1 and
+                    e_2. Then, deem two pairs of features descriptors to correspond to the same
+                    point on two separate images if e_1 / e_2 is strictly less than a threshold. The
+                    reason this is done is to ensure that the nearest neighbor is a clear better
+                    match than the second nearest neighbor, otherwise the uncertainty could hint at
+                    a mismatch. This procedure is meant to weed out all false positives that would
+                    otherwise exist from naive matching. For the threshold, we decided on 0.4, which
+                    is strict enough to filter out a lot of the obvious mismatches and narrow the
+                    number of point pairs down to less than 15. There are still a few mismatches
+                    present, which will certainly mess up the homography, but this will be fixed in
+                    the next part. For now, here are the point matches for 3 pairs of images.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="out_path/vlsb_L_vlsb_R_matched.jpg"
+                            alt="Matched Features between the Left and Right Images of the Valley Life
+                        Sciences Building"
+                        />
+                        <p>
+                            Matched Features between the Left and Right Images of the Valley Life
+                            Sciences Building
+                        </p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="out_path/california_L_california_R_matched.jpg"
+                            alt="Matched Features between the Left and Right Images of California Hall"
+                        />
+                        <p>Matched Features between the Left and Right Images of California Hall</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img
+                            src="out_path/doe_L_doe_R_matched.jpg"
+                            alt="Matched Features between the Left and Right Images of Doe Memorial
+                        Library"
+                        />
+                        <p>
+                            Matched Features between the Left and Right Images of Doe Memorial
+                            Library
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>RANSAC for Robust Homography</h2>
+                <p>
+                    In order to find the correct point correspondences needed to produce a useful
+                    homography for warping, we adopt the 4-point RANSAC algorithm, which is meant to
+                    cleanly filter out all point mismatches. Here is an outline of this algorithm:
+                    First, randomly sample 4 pairs of features without replacement. Then compute the
+                    homography, H, on these pairs and find where H takes points in the first image.
+                    If the transformed point lands within epsilon of its corresponding point in the
+                    second image, then include this pair in a set of "inliers". Repeat this process
+                    for 1,000 iterations (sufficiently many to compute a stable homography), where
+                    each iterations tries to expand the set of inliers and recompute an improved
+                    homography. After the 1,000 iterations, take the best homography and compute the
+                    best tranformed points, which will be used to create the mosaic (using the same
+                    procedure as before). We found that an epsilon of 5 pixels works the best to
+                    allow leeway for some noise, but conservative enough to prevent genuinely
+                    different points from being associated together. Below, you can find
+                    side-by-side comparisons between the manual image stitching used previously and
+                    the newly automatic image stitching produced by RANSAC. One can see that there
+                    are noticable improvements, such as cleaner blends between the images. The main
+                    utility, however, is removing the need to manually specify corresponding points
+                    between the two images, since we can now produce a mosaic automatically!
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="out_path/vlsb_mosaic.jpg" alt="Manually Stitched VLSB Mosaic" />
+                        <p>Manually Stitched VLSB Mosaic</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/vlsb_L_vlsb_R_RANSAC_mosaic.jpg"
+                            alt="Automatically Stitched VLSB Mosaic via RANSAC"
+                        />
+                        <p>Automatically Stitched VLSB Mosaic via RANSAC</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/california_mosaic.jpg"
+                            alt="Manually Stitched California Hall Mosaic"
+                        />
+                        <p>Manually Stitched California Hall Mosaic</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/california_L_california_R_RANSAC_mosaic.jpg"
+                            alt="Automatically Stitched California Hall Mosaic via RANSAC"
+                        />
+                        <p>Automatically Stitched California Hall Mosaic via RANSAC</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/doe_mosaic.jpg"
+                            alt="Manually Stitched Doe Memorial Library Mosaic"
+                        />
+                        <p>Manually Stitched Doe Memorial Library Mosaic</p>
+                    </div>
+                    <div class="image-pair">
+                        <img
+                            src="out_path/doe_L_doe_R_RANSAC_mosaic.jpg"
+                            alt="Automatically Stitched Doe Memorial Library Mosaic via RANSAC"
+                        />
+                        <p>Automatically Stitched Doe Memorial Library Mosaic via RANSAC</p>
                     </div>
                 </div>
             </div>
