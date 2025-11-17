@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Project 4: Neural Radiance Field</title>
+        <link rel="stylesheet" href="../style.css" />
+        <style>
+            .project-container {
+                max-width: 1000px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+
+            .section {
+                margin-bottom: 40px;
+            }
+
+            .image-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+                margin: 20px 0;
+            }
+
+            .image-grid-3 {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+                margin: 20px 0;
+            }
+
+            .image-pair {
+                text-align: center;
+            }
+
+            .image-pair img {
+                max-width: 100%;
+                height: auto;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                margin: 5px;
+            }
+
+            .image-pair p {
+                font-size: 0.9em;
+                color: #666;
+                margin: 5px 0;
+            }
+
+            .span-2 {
+                grid-column: span 2;
+            }
+
+            .full-row {
+                grid-column: 1 / -1;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="project-container">
+            <h1>Project 4: Neural Radiance Field</h1>
+
+            <div class="section">
+                <h2>Project Overview</h2>
+                <p>
+                    This project implements a Neural Radiance Field, or NeRF, which is a SOTA
+                    technique in computer vision for synthesizing realistic novel views of 3D
+                    scenes. NeRF models a scene as a function mapping coordinates in 3D space and
+                    viewing directions to volume density and RGB color, which allows for extremely
+                    accurate reconstruction of real-life geometric structures with dynamic lighting.
+                    By training the underlying neural network to match observed images via
+                    differentiable volume rendering, NeRF is able to generate new viewing angles
+                    with realistic appearances to any given scene.
+                </p>
+                <p>
+                    In particular, this project explores the construction of NeRFs from scratch,
+                    starting with calibrating cameras and going through 2D neural fields, 3D ray
+                    sampling, and full volumetric rendering. We first find accurate camera
+                    intrinsics and extrinsics by capturing ArUco tag calibration images, then
+                    estimating camera poses to build a clean, undistorted dataset suitable for NeRF
+                    training. From there, we transition into neural field learning, starting with a
+                    2D neural field mapping pixel coordinates to RGB values using an MLP and
+                    sinusoidal positional encoding. We then extend these ideas into 3D by
+                    implementing all components of a NeRF. After benchmarking on the LEGO dataset,
+                    we apply the full pipeline to a custom-made cube dataset, with associated
+                    hyperparameter tuning. Together, these components demonstrate an end-to-end NeRF
+                    system built from first principles.
+                </p>
+            </div>
+
+            <div class="section">
+                <h2>Camera Calibration and 3D Scanning</h2>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="calibration_images/IMG_8578.jpg" alt="Input Image 0" />
+                        <p>One of 40 Calibration Images Involving 6 ArUco Tags</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="object_images/IMG_8618.jpg" alt="Input Image 0" />
+                        <p>One of 40 Object Images in Custom Cube Dataset</p>
+                    </div>
+                </div>
+                <p>
+                    In order to calibrate the camera, I captured 40 images of 6 ArUco tags from my
+                    phone camera. I made sure to vary the angle and distance of the camera, while
+                    keeping zoom the same. From here, I ran a script to detect corners of each
+                    calibration tag, along with their corresponding 3D coordinates in the world
+                    frame, and pass them into cv2.calibrateCamera() in order to fetch the camera
+                    intrinsics and distortion coefficients. Now, I can place my object that I want
+                    to build a NeRF of next to a single ArUco tag, capturing 40 images with varying
+                    horizontal and vertical angles. Since I have already completed the calibration
+                    step, I can estimate the poses of all of these cameras by solving the
+                    Perspective-n-Point (PnP) Problem. This involves finding a camera's extrinsic
+                    parameters given their 3D world coordinates and 2D projections. I used
+                    cv2.solvePnP to achieve this. The camera frustums can be visualized in Viser to
+                    create the following images.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="frustums1.png" alt="Input Image 0" />
+                        <p>Camera Frustums Viewpoint 1</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="frustums2.png" alt="Input Image 0" />
+                        <p>Camera Frustums Viewpoint 2</p>
+                    </div>
+                </div>
+                <p>
+                    Now that I have the camera poses estimated, I need to undistort the images if I
+                    want to generate a usable dataset. Lens distortion can be removed from an image
+                    using cv2.undistort(), allowing the image to be saved in a .npz file thereafter.
+                    This file can be created using np.savez(), and has the following keys:
+                    images_train, c2ws_train, images_val, c2ws_val, c2ws_test, focal. This newly
+                    created dataset will allow us to build a NeRF on the captured object.
+                </p>
+            </div>
+
+            <div class="section">
+                <h2>Fit a Neural Field to a 2D Image</h2>
+                <p>
+                    In 2D, a neural field is defined as F: {u, v} -> {r, g, b}, where {u, v} are the
+                    pixel coordinates in the 2D image. F represents a multi-layer perceptron whose
+                    architecture can be found below. There are 4 fully-connected layers, three of
+                    which have a width of 256 neurons, and one with a width of 3 neurons (for RGB,
+                    which will input into sigmoid). In order to achieve more expressive images
+                    though, we also opt for sinusoidal positional encoding on the input coordinates.
+                    The formulation can also be found below (note that L denotes the highest
+                    frequency level). Given an MLP and a dataloader (which is necessary since
+                    sampling all pixels every time is infeasible), we can train the network using
+                    the Adam optimizer with a learning rate of 1e-2, 3k iterations, a batch size of
+                    10k, and MSE (mean squared error) as the critertion. In this case, it is better
+                    to use peak signal-to-noise ratio (PSNR) in order to evaluate training progress.
+                    The formula for PSNR, which is derived from MSE, can be seen below.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="arch1.png" alt="Iteration 0" />
+                        <p>Neural Network Architecture for 2D Neural Field</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="pos_encoding.png" alt="Iteration 0" />
+                        <p>Positional Encoding Formulation (L = maximum frequency)</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="psnr.png" alt="Iteration 0" />
+                        <p>PSNR Derivation from MSE</p>
+                    </div>
+                </div>
+                <p>
+                    We train this neural field on two different images: one of a fox, and one of a
+                    cat. The training progression for both images can be seen below.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="nf_2d_out/fox_recon_iter30.jpg" alt="Input Image 0" />
+                        <p>Fox Iteration 30</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/fox_recon_iter100.jpg" alt="Input Image 0" />
+                        <p>Fox Iteration 100</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/fox_recon_iter300.jpg" alt="Input Image 0" />
+                        <p>Fox Iteration 300</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/fox_recon_iter1000.jpg" alt="Input Image 0" />
+                        <p>Fox Iteration 1000</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/fox_recon_L10_W256.jpg" alt="Input Image 0" />
+                        <p>Fox Iteration 3000</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="fox.jpg" />
+                        <p>Fox Ground Truth</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="nf_2d_out/cat_recon_iter30.jpg" alt="Input Image 0" />
+                        <p>Cat Iteration 30</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/cat_recon_iter100.jpg" alt="Input Image 0" />
+                        <p>Cat Iteration 100</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/cat_recon_iter300.jpg" alt="Input Image 0" />
+                        <p>Cat Iteration 300</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/cat_recon_iter1000.jpg" alt="Input Image 0" />
+                        <p>Cat Iteration 1000</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/cat_recon_L10_W256.jpg" alt="Input Image 0" />
+                        <p>Cat Iteration 3000</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="cat.jpg" />
+                        <p>Cat Ground Truth</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="nf_2d_out/fox_psnr_L10_W256.jpg" alt="Input Image 0" />
+                        <p>Fox PSNR Curve</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/cat_psnr_L10_W256.jpg" alt="Input Image 0" />
+                        <p>Cat PSNR Curve</p>
+                    </div>
+                </div>
+                <p>
+                    Some choices of hyperparameters include number of hidden units (which is
+                    currently set to 256 neurons), and maximum frequency (which is currently set to
+                    10). We have chosen to visualize some smaller values for these hyperparameters,
+                    just to see how the reconstructed image would be affected.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="nf_2d_out/fox_recon_L3_W64.jpg" alt="Input Image 0" />
+                        <p>Fox Width=64, L=3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/fox_recon_L3_W256.jpg" alt="Input Image 0" />
+                        <p>Fox Width=256, L=3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/fox_recon_L10_W64.jpg" alt="Input Image 0" />
+                        <p>Fox Width=64, L=10</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/fox_recon_L10_W256.jpg" alt="Input Image 0" />
+                        <p>Fox Width=256, L=10</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="nf_2d_out/cat_recon_L3_W64.jpg" alt="Input Image 0" />
+                        <p>Cat Width=64, L=3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/cat_recon_L3_W256.jpg" alt="Input Image 0" />
+                        <p>Cat Width=256, L=3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/cat_recon_L10_W64.jpg" alt="Input Image 0" />
+                        <p>Cat Width=64, L=10</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nf_2d_out/cat_recon_L10_W256.jpg" alt="Input Image 0" />
+                        <p>Fox Width=256, L=10</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Fit a Neural Radiance Field from Multi-view Images</h2>
+                <p>
+                    Now we move closer towards constructing a NeRF in 3D. But first, we must derive
+                    key functions that are needed for transformations in 3D space. First, we have a
+                    function transform(), which takes in a camera-to-world transformation matrix and
+                    camera space coordinates and outputs the corresponding world space coordinates.
+                    In addition, we have pixel_to_camera(), which takes in a camera intrinstic
+                    matrix K, a 2D image point in the pixel coordinate system, along with the depth
+                    of the point (s) along the optical axis, and outputs a 3D point in the camera
+                    coordinates system. Finally, we have a function pixel_to_ray(), which takes in a
+                    camera intrinsic, a camera-to-world transformation matrix, and a 2D point in the
+                    pixel coordinate system. This function then outputs the normalized ray
+                    corresponding to that pixel coordinate. Specifically, the ray's origin and
+                    direction are returned. All of the previously mentioned functions are batched,
+                    as they will be used for sampling to create a dataloader for our NeRF.
+                </p>
+
+                <p>
+                    In terms of sampling, there are two crucial methods that needed implementation.
+                    The first involves sampling rays from images, which I did via a singular global
+                    sampling to grab N rays from all images (a relatively straight-forward process).
+                    The second method involves sampling points from rays, which is slightly
+                    trickier. My implementation involves first setting near and far to 2.0 and 6.0
+                    respectively, which essentially denotes the range on a ray from which you sample
+                    points from. These numbers are specifically for the lego scene, and will change
+                    later. In order to prevent overfitting, we add a small perturbation that is only
+                    in effect during training time. These two different methods of sampling are both
+                    used to create the dataloader for the upcoming step, since we will need to
+                    sample pixels from images with multiple views (hence, rays will be needed).
+                    Below is a Viser scene of 100 randomly sampled rays across the entirety of the
+                    lego scene, along with the scene's cameras. You can also observe 100 randomly
+                    sampled rays coming out of a single camera.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="rays_all.png" alt="Iteration 0" />
+                        <p>Rays and Cameras Randomly Sampled in 3D</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="rays_one.png" alt="Iteration 0" />
+                        <p>Rays Randomly Sampled from One Camera</p>
+                    </div>
+                </div>
+                <p>
+                    Now that the dataloader is complete, we can start building the architecture for
+                    the network that will take in 3D coordinates and ray directions in order to
+                    output rgb values with their sigma (representing the point's density in 3D
+                    space). There are a few key differences between this network and the last one.
+                    The most obvious one is that the network is deeper, which is a necessity since
+                    3D representations require more expressive power than 2D ones. Second, there are
+                    now two positional encodings: one for the 3D coordinate and one for the ray
+                    direction. Both encodings have different maximum frequencies assigned to them,
+                    with the coordinate PE having L=10 and the ray direction PE having L=4. Finally,
+                    because the network is deeper, we need connections across the network in order
+                    to make the loss landscape less ugly (thus allowing gradients to flow through
+                    the network with better success). The architecture for this new network can be
+                    seen below.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="arch2.png" alt="Iteration 0" />
+                        <p>Neural Network Architecture for 3D NeRF</p>
+                    </div>
+                </div>
+                <p>
+                    Finally, we need volume rendering capability. The discrete approximation of the
+                    core volume rendering equation is attached below. Notice that this outputs the
+                    rendered color of each pixel along a ray, giving NeRF the capacity to model how
+                    light is absorbed and emitted in 3D space (hence yielding realistic views). From
+                    here, our training loop uses Adam with a learning rate of 5e-4, 1k iterations,
+                    and a batch size of 10k. The near and far parameters have been kept at 2m and 6m
+                    respectively, with n_samples set to 64. The intermediate reconstructed images,
+                    as well as the final reconstructed image, can be seen below. In addition, we
+                    plot the PSNRs during training, as well as those for validation. We can also use
+                    the test cameras to build a GIF of the object being circled around.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="volren.png" alt="Iteration 0" />
+                        <p>Discrete Approximation of Volume Rendering Equation</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="nerf_out/truck_recon_i200.jpg" alt="Iteration 0" />
+                        <p>Lego Iteration 200</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nerf_out/truck_recon_i400.jpg" alt="Iteration 0" />
+                        <p>Lego Iteration 400</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nerf_out/truck_recon_i600.jpg" alt="Iteration 0" />
+                        <p>Lego Iteration 600</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nerf_out/truck_recon_i800.jpg" alt="Iteration 0" />
+                        <p>Lego Iteration 800</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nerf_out/truck_recon_i1000.jpg" alt="Iteration 0" />
+                        <p>Lego Iteration 1000</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nerf_out/truck_recon_i1200.jpg" alt="Iteration 0" />
+                        <p>Lego Iteration 1200</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nerf_out/truck_recon_i1400.jpg" alt="Iteration 0" />
+                        <p>Lego Iteration 1400</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nerf_out/truck_spherical.gif" alt="Iteration 0" />
+                        <p>Lego Spinning GIF</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="nerf_out/truck_psnr.jpg" alt="Iteration 0" />
+                        <p>Training and Validation PSNR Curve for LEGO Dataset</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Training with Your Own Data</h2>
+                <p>
+                    Now, we are able to use the dataset created at the very beginning in order to
+                    build a NeRF on our own object. This part was extremely experimental, namely
+                    searching for optimal hyperparameters. I decided on a training loop using Adam
+                    with a learning rate of 1e-3 (allowing for slightly faster learning without
+                    introducing any divergence), 3.6k iterations (increased from 1k in order to
+                    reach the same 23 PSNR achieved with the lego scene), and a batch size of 10k.
+                    The near and far parameters have been set to 0.02m and 0.4m respectively, given
+                    the fact that the photos were taken within these distances from the object in
+                    real life. n_samples was set to 64, and this value did not need to change. The
+                    intermediate reconstructed images, as well as the final reconstructed image, can
+                    be seen below. In addition, we plot both the PSNRs and MSEs during training.
+                    This training session allows us to generate a GIF comprising of novel views of
+                    the image. An attempt at this can be seen below.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="nerf_out/cube_recon_i600.jpg" alt="Iteration 0" />
+                        <p>Cube Iteration 600</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nerf_out/cube_recon_i1200.jpg" alt="Iteration 0" />
+                        <p>Cube Iteration 1200</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nerf_out/cube_recon_i1800.jpg" alt="Iteration 0" />
+                        <p>Cube Iteration 1800</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nerf_out/cube_recon_i2400.jpg" alt="Iteration 0" />
+                        <p>Cube Iteration 2400</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nerf_out/cube_recon_i3000.jpg" alt="Iteration 0" />
+                        <p>Cube Iteration 3000</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nerf_out/cube_recon_i3600.jpg" alt="Iteration 0" />
+                        <p>Cube Iteration 3600</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="nerf_out/cube_spherical.gif" alt="Iteration 0" />
+                        <p>Cube Spinning GIF</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="nerf_out/cube_psnr.jpg" alt="Iteration 0" />
+                        <p>Training PSNR Curve for Cube Dataset</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="nerf_out/cube_mse.jpg" alt="Iteration 0" />
+                        <p>Training MSE Curve for Cube Dataset</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
