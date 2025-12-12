@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Project 5</title>
+        <link rel="stylesheet" href="../style.css" />
+        <style>
+            .project-container {
+                max-width: 1000px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+
+            .section {
+                margin-bottom: 40px;
+            }
+
+            .image-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+                margin: 20px 0;
+            }
+
+            .image-grid-3 {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+                margin: 20px 0;
+            }
+
+            .image-pair {
+                text-align: center;
+            }
+
+            .image-pair img {
+                max-width: 100%;
+                height: auto;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                margin: 5px;
+            }
+
+            .image-pair p {
+                font-size: 0.9em;
+                color: #666;
+                margin: 5px 0;
+            }
+
+            .span-2 {
+                grid-column: span 2;
+            }
+
+            .full-row {
+                grid-column: 1 / -1;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="project-container">
+            <h1>Project 5: Fun with Diffusion Models</h1>
+
+            <div class="section">
+                <h2>Project Overview</h2>
+                <p>
+                    This project implements and deploys diffusion models for the purposes of image
+                    generation. In the first half, we play around with these diffusion models and
+                    try to understand what they are capable of. We also implement diffusion sampling
+                    loops, and create some fun generated images such as optical illusions. In the
+                    second half, we train a flow matching model on the MNIST dataset, which consist
+                    of handwritten digits from 0-9. This is done via building and training a UNet.
+                </p>
+            </div>
+            <div class="section">
+                <h2>Setup</h2>
+                <p>
+                    We used the DeepFloyd IF diffusion model to generate our images. DeepFloyd
+                    generates images in two stages: the first stage produces an image of size 64x64,
+                    while the second stage takes that image and upscales it to 256x256. In order to
+                    generate an image, the model needs to talso take in a prompt embedding, which is
+                    raw text turned into a high-dimensional vector (which the model can understand).
+                    Below is the pool of prompts used for this project.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="5a_prompts.png" alt="Timestep 0" />
+                        <p>The Pool of Prompts used for this Project</p>
+                    </div>
+                </div>
+                <p>
+                    Now we take three of these prompts and use them to generate images using
+                    DeepFloyd. num_inference_steps specifies the number of denoising steps to take.
+                    It exists on a scale from 1-1000, where a smaller number equates to lower
+                    quality and a larger number equates to higher quality. Below are the generated
+                    images. Even with a jump in number of inference steps from 20 to 200, there is a
+                    noticable difference in the quality of the image generated. Starting now, we
+                    initialize a seed of 83197532, which we will use for the rest of the project.
+                </p>
+
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="setup1.png" alt="Timestep 0" />
+                        <p>A Photo of a Hipster Barista, num_inference_steps=20</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="setup2.png" alt="Timestep 0" />
+                        <p>An Oil Painting of People around a Campfire, num_inference_steps=20</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="setup3.png" alt="Timestep 100" />
+                        <p>A Man Wearing a Hat, num_inference_steps=20</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="setup4.png" alt="Timestep 500" />
+                        <p>A Photo of a Hipster Barista, num_inference_steps=200</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="setup5.png" alt="Timestep 500" />
+                        <p>An Oil Painting of People around a Campfire, num_inference_steps=200</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="setup6.png" alt="Timestep 500" />
+                        <p>A Man Wearing a Hat, num_inference_steps=200</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Implementing the Forward Process</h2>
+                <p>
+                    Now we will produce our own sampling loops that rely on DeepFloy's pretrained
+                    denoisers. This will be used to produce images of similar quality as the ones
+                    above. Given a clean image, x_0, we can add noise to get a noisy version of the
+                    image, x_t. A diffusion model attempts to undo this noising step by predicting
+                    the noise in the image. To generate images, we start with pure Gaussian noise,
+                    predict the noise, and remove it to get a clean image. The first step is to
+                    implement the forward process, which is defined by the folowing equations:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="noise_eqs.png" alt="Timestep 0" />
+                        <p>Equations for the Forward Process</p>
+                    </div>
+                </div>
+                <p>
+                    We will then run this forward process on a test image, which is the Berkeley
+                    Campanile in this case. We try noise levels of 250, 500, and 750 (1000 is pure
+                    noise). Here are the results:
+                </p>
+
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="campanile.png" alt="Timestep 0" />
+                        <p>The Berkeley Campanile</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile250.png" alt="Timestep 0" />
+                        <p>Campanile at Noise Level t=250</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile500.png" alt="Timestep 100" />
+                        <p>Campanile at Noise Level t=500</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile750.png" alt="Timestep 500" />
+                        <p>Campanile at Noise Level t=750</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Classical Denoising</h2>
+                <p>
+                    An extremely naive approach to denoising these images would be to just Gaussian
+                    blur filter them. This gets rid of the high frequencies of the image, but it is
+                    clear that another method is needed. Our best Gaussian-denoised images are shown
+                    below, where we settled on kernel_size=13:
+                </p>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="campanile250.png" alt="Timestep 0" />
+                        <p>Campanile at Noise Level t=250</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile500.png" alt="Timestep 100" />
+                        <p>Campanile at Noise Level t=500</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile750.png" alt="Timestep 500" />
+                        <p>Campanile at Noise Level t=750</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile250b.png" alt="Timestep 0" />
+                        <p>Campanile at Noise Level t=250, Blurred</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile500b.png" alt="Timestep 100" />
+                        <p>Campanile at Noise Level t=500, Blurred</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile750b.png" alt="Timestep 500" />
+                        <p>Campanile at Noise Level t=750, Blurred</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Implementing One-Step Denoising</h2>
+                <p>
+                    Now we turn to one-step denoising via the pretrained diffusion model. This model
+                    is a UNet trained to recover Gaussian noise from the image. The noise will then
+                    be removed from the image to create a clean image. As an aside, we include the
+                    prompt "a high quality photo" since these model were trained with text
+                    conditioning, and therefore need a text prompt embedding. Using the same three
+                    noisy images, we generate an estimate of what the original image could have
+                    been. This can be seen below.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="campanile.png" alt="Timestep 0" />
+                        <p>The Berkeley Campanile</p>
+                    </div>
+                </div>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="campanile250.png" alt="Timestep 0" />
+                        <p>Campanile at Noise Level t=250</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile500.png" alt="Timestep 100" />
+                        <p>Campanile at Noise Level t=500</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile750.png" alt="Timestep 500" />
+                        <p>Campanile at Noise Level t=750</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile250osd.png" alt="Timestep 0" />
+                        <p>Campanile at Noise Level t=250, One-Step Denoised</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile500osd.png" alt="Timestep 100" />
+                        <p>Campanile at Noise Level t=500, One-Step Denoised</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile750osd.png" alt="Timestep 500" />
+                        <p>Campanile at Noise Level t=750, One-Step Denoised</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Iterative Denoising</h2>
+                <p>
+                    Although this performs significantly better than classical denoising, results
+                    get worse as the noise in the image increases. We can solve this problem by
+                    denoising iteratively instead of in one shot. We generate the less noisy image
+                    x_t' given the more noisy image x_t using the following formula:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="iterative_denoise_eq.png" alt="Timestep 0" />
+                        <p>Formula for Iterative Denoising</p>
+                    </div>
+                </div>
+                <p>
+                    In this section, we show iterative denoising in action. Starting from an
+                    extremeley noisy image, we display the result every 5 timesteps (our algorithm's
+                    timesteps are in intervals of 30). Then we display the final, iteratively
+                    denoised image, along with a side-by-side comparison with the one-step denoised
+                    image. We also throw in the Gaussian blurred image to show how much better these
+                    two methods are than the naive method. Finally, we display the original image.
+                </p>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="campanile660id.png" alt="Input with Mask" />
+                        <p>Campanile at Noise Level t=660, Iteratively Denoised</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile510id.png" alt="Inpainted Result" />
+                        <p>Campanile at Noise Level t=510, Iteratively Denoised</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile360id.png" alt="Input with Mask" />
+                        <p>Campanile at Noise Level t=360, Iteratively Denoised</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile210id.png" alt="Inpainted Result" />
+                        <p>Campanile at Noise Level t=210, Iteratively Denoised</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile60id.png" alt="Input with Mask" />
+                        <p>Campanile at Noise Level t=60, Iteratively Denoised</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile0id.png" alt="Inpainted Result" />
+                        <p>Iteratively Denoised Campanile</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanileosd.png" alt="Input with Mask" />
+                        <p>One-Step Denoised Campanile</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanileb.png" alt="Inpainted Result" />
+                        <p>Noisy Campanile, Blurred</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="campanile.png" alt="Inpainted Result" />
+                        <p>The Berkeley Campanile</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Diffusion Model Sampling</h2>
+                <p>
+                    On top of denoising images, we can also use iterative denoising to generate
+                    images from scratch. The only difference is that we pass in completely random,
+                    Gaussian noise into the model instead of a noisy image. The prompt "a high
+                    quality photo" is passed into the model. Here are the results:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="dimage1.png" alt="Epoch 0" />
+                        <p>Denoised Image 1</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="dimage2.png" alt="Epoch 50" />
+                        <p>Denoised Image 2</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="dimage3.png" alt="Epoch 100" />
+                        <p>Denoised Image 3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="dimage4.png" alt="Epoch 100" />
+                        <p>Denoised Image 4</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="dimage5.png" alt="Epoch 100" />
+                        <p>Denoised Image 5</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Classifer-Free Guidance (CFG)</h2>
+                <p>
+                    Since the results above are pretty non-sensical and not of the best quality, we
+                    turn to a more sophisticated method called Classifier-Free Guidance. In CFG, we
+                    compute both a conditional noise estimate and an unconditional noise estimate,
+                    labelled epsilon_c and epsilon_u respectively. The new noise estimate then
+                    becomes:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="cfg_noise_eq.png" alt="Timestep 0" />
+                        <p>Formula for CFG Noise Estimate</p>
+                    </div>
+                </div>
+                <p>
+                    Here, gamma controls how strong the CFG is. Higher quality images are generates
+                    when gamma > 1. As an aside, the empty prompt "" will be passed in from now on.
+                    Below are five more generated images, this time with CFG using gamma=7.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="cfgimage1.png" alt="Epoch 0" />
+                        <p>CFG Denoised Image 1</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="cfgimage2.png" alt="Epoch 50" />
+                        <p>CFG Denoised Image 2</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="cfgimage3.png" alt="Epoch 100" />
+                        <p>CFG Denoised Image 3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="cfgimage4.png" alt="Epoch 100" />
+                        <p>CFG Denoised Image 4</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="cfgimage5.png" alt="Epoch 100" />
+                        <p>CFG Denoised Image 5</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Image-to-Image Translation</h2>
+                <p>
+                    Now, we will implement image-to-image translation, which will take an image,
+                    noise it, and denoise it to place it back onto the manifold of images without
+                    any conditioning. This follows the SDEdit algorithm, which results in generated
+                    images that converge to the original image as the starting index increases
+                    (meaning that the noise added to the image decreases). We show results on
+                    starting indices of [1, 3, 5, 7, 10, 20] steps. The conditional text prompt here
+                    is "a high quality photo".
+                </p>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="i2icampanile1.png" alt="Epoch 0" />
+                        <p>SDEdit Denoised Campanile with i_start=1</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2icampanile3.png" alt="Epoch 50" />
+                        <p>SDEdit Denoised Campanile with i_start=3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2icampanile5.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Campanile with i_start=5</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2icampanile7.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Campanile with i_start=7</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2icampanile10.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Campanile with i_start=10</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2icampanile20.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Campanile with i_start=20</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="campanile.png" alt="Epoch 100" />
+                        <p>The Berkeley Campanile</p>
+                    </div>
+                </div>
+
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="i2iliberty1.png" alt="Epoch 0" />
+                        <p>SDEdit Denoised Statue of Liberty with i_start=1</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2iliberty3.png" alt="Epoch 50" />
+                        <p>SDEdit Denoised Statue of Liberty with i_start=3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2iliberty5.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Statue of Liberty with i_start=5</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2iliberty7.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Statue of Liberty with i_start=7</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2iliberty10.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Statue of Liberty with i_start=10</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2iliberty20.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Statue of Liberty with i_start=20</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="liberty.jpeg" alt="Epoch 100" />
+                        <p>The Statue of Liberty</p>
+                    </div>
+                </div>
+
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="i2ieiffel1.png" alt="Epoch 0" />
+                        <p>SDEdit Denoised Eiffel Tower with i_start=1</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ieiffel3.png" alt="Epoch 50" />
+                        <p>SDEdit Denoised Eiffel Tower with i_start=3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ieiffel5.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Eiffel Tower with i_start=5</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ieiffel7.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Eiffel Tower with i_start=7</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ieiffel10.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Eiffel Tower with i_start=10</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ieiffel20.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Eiffel Tower with i_start=20</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="eiffel.jpeg" alt="Epoch 100" />
+                        <p>The Eiffel Tower</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Editing Hand-Drawn and Web Images</h2>
+                <p>
+                    The SDEdit algorithm works better with simple sketches and hand-drawn images.
+                    Like before, we show results on starting indices of [1, 3, 5, 7, 10, 20] steps.
+                    Notice how in each example, the generate images inch closer and closer to the
+                    original image (since there is less noise and thus less room to deviate).
+                </p>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="i2imountains1.png" alt="Epoch 0" />
+                        <p>SDEdit Denoised Mountains with i_start=1</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2imountains3.png" alt="Epoch 50" />
+                        <p>SDEdit Denoised Mountains with i_start=3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2imountains5.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Mountains with i_start=5</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2imountains7.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Mountains with i_start=7</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2imountains10.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Mountains with i_start=10</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2imountains20.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Mountains with i_start=20</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="mountains.jpeg" alt="Epoch 100" />
+                        <p>An Online Sketch of Mountains</p>
+                    </div>
+                </div>
+
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="i2ihouse1.png" alt="Epoch 0" />
+                        <p>SDEdit Denoised House with i_start=1</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ihouse3.png" alt="Epoch 50" />
+                        <p>SDEdit Denoised House with i_start=3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ihouse5.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised House with i_start=5</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ihouse7.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised House with i_start=7</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ihouse10.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised House with i_start=10</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ihouse20.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised House with i_start=20</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="house.png" alt="Epoch 100" />
+                        <p>Hand Sketch of a House</p>
+                    </div>
+                </div>
+
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="i2ibutterfly1.png" alt="Epoch 0" />
+                        <p>SDEdit Denoised Butterfly with i_start=1</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ibutterfly3.png" alt="Epoch 50" />
+                        <p>SDEdit Denoised Butterfly with i_start=3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ibutterfly5.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Butterfly with i_start=5</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ibutterfly7.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Butterfly with i_start=7</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ibutterfly10.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Butterfly with i_start=10</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="i2ibutterfly20.png" alt="Epoch 100" />
+                        <p>SDEdit Denoised Butterfly with i_start=20</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="butterfly.png" alt="Epoch 100" />
+                        <p>Hand Sketch of a Butterfly</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Inpainting</h2>
+                <p>
+                    We can also use SDEdit to implement inpainting. This process takes in an image x
+                    along with a binary mask m, and creates a new image such that the content is
+                    unchanged where m=0 and newly generated where m=1. We can run the diffusion
+                    denoising loop to apply this procedure on x_t:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="inpainting_eq.png" alt="Epoch 100" />
+                        <p>Formula for Inpainting</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Text-Conditional Image-to-Image Translation</h2>
+                <p>
+                    Now, we will attempt to guide the denoising of the image with a text prompt.
+                    This gives direction to how the noisy image is reprojected back onto the
+                    manifold of images. The only implementation difference is that we change the
+                    prompt from "a high quality photo" to any prompt of our choice. As before, the
+                    images start off looking like the prompt (when noise is high), but gradually
+                    move to the original image as noise decreases. Here are a few examples of this:
+                </p>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="tci2icampanile1.png" alt="Epoch 0" />
+                        <p>Pencil at Noise Level 1</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icampanile3.png" alt="Epoch 50" />
+                        <p>Pencil at Noise Level 3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icampanile5.png" alt="Epoch 100" />
+                        <p>Pencil at Noise Level 5</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icampanile7.png" alt="Epoch 100" />
+                        <p>Pencil at Noise Level 7</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icampanile10.png" alt="Epoch 100" />
+                        <p>Pencil at Noise Level 10</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icampanile20.png" alt="Epoch 100" />
+                        <p>Pencil at Noise Level 20</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="campanile.png" alt="Epoch 100" />
+                        <p>The Berkeley Campanile</p>
+                    </div>
+                </div>
+
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="tci2icat1.png" alt="Epoch 0" />
+                        <p>Dog at Noise Level 1</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icat3.png" alt="Epoch 50" />
+                        <p>Dog at Noise Level 3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icat5.png" alt="Epoch 100" />
+                        <p>Dog at Noise Level 5</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icat7.png" alt="Epoch 100" />
+                        <p>Dog at Noise Level 7</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icat10.png" alt="Epoch 100" />
+                        <p>Dog at Noise Level 10</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icat20.png" alt="Epoch 100" />
+                        <p>Dog at Noise Level 20</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="cat.jpeg" alt="Epoch 100" />
+                        <p>A Photo of a Cat</p>
+                    </div>
+                </div>
+
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="tci2icurtains1.png" alt="Epoch 0" />
+                        <p>Waterfalls at Noise Level 1</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icurtains3.png" alt="Epoch 50" />
+                        <p>Waterfalls at Noise Level 3</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icurtains5.png" alt="Epoch 100" />
+                        <p>Waterfalls at Noise Level 5</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icurtains7.png" alt="Epoch 100" />
+                        <p>Waterfalls at Noise Level 7</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icurtains10.png" alt="Epoch 100" />
+                        <p>Waterfalls at Noise Level 10</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="tci2icurtains20.png" alt="Epoch 100" />
+                        <p>Waterfalls at Noise Level 20</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="curtains.jpeg" alt="Epoch 100" />
+                        <p>A Photo of Blue Curtains</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Visual Anagrams</h2>
+                <p>
+                    Now, we can implement visual anagrams, which will allow us to build optical
+                    illusions with the images generates from a diffusion model. The procedure works
+                    as follows: first, take a noisy image x_t and denoise it with prompt p_1 to get
+                    noise estimate epsilon_1, then, take upside-down x_t and denoise it with prompt
+                    p_2 to get noise estimate epsilon_2. Once this is done, flip epsilon_2 back and
+                    average the two noise estimates, and finally, denoise with the averaged noise
+                    estimate. The algorithm is shown below:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="visual_anagrams_eq.png" alt="Epoch 100" />
+                        <p>Algorithm for Generating Visual Anagrams</p>
+                    </div>
+                </div>
+                <p>
+                    Using the above procedure, we can generate two illusions that change appearance
+                    when the image is flipped upside-down. These are shown down below.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="man-dog.png" alt="Epoch 0" />
+                        <p>A Photo of a Man</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="man-dog180.png" alt="Epoch 50" />
+                        <p>A Photo of a Dog</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="village-campfire.png" alt="Epoch 100" />
+                        <p>An Oil Painting of a Snowy Mountain Village</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="village-campfire180.png" alt="Epoch 100" />
+                        <p>An Oil Painting of People Around a Campfire</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Hybrid Images</h2>
+                <p>
+                    Now we can generate hybrid images with diffusion models, or illusions where one
+                    image appears at a high frequency while the other image appears at a low
+                    frequency. This is done by creating a composite noise estimate, epsilon, by
+                    estimating the noise with two separate text prompts, and then stitching together
+                    the low frequencies from one image with the high frequencies from another. Here
+                    is the algorithm for that, which follows Factorized Diffusion, along with the
+                    generated images:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="hybrid_eq.png" alt="Epoch 100" />
+                        <p>Formula for Generating Hybrid Images</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="oldman-waterfalls.png" alt="Epoch 0" />
+                        <p>Hybrid Image of an Old Man and Waterfalls</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="skull-village.png" alt="Epoch 100" />
+                        <p>Hybrid image of a Skull and a Snowy Mountain Village</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Implementing a Single-Step Denoising UNet</h2>
+                <p>
+                    Now, we pivot to training the flow matching model on the MNIST dataset. The
+                    first step is to build a one-step denoiser. Our goal here is to optimize over
+                    the following L2 loss, where D_theta is the denoiser that maps a noise image z
+                    to a clean image x:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="5b_loss.png" alt="Epoch 0" />
+                        <p>L2 Loss for the UNet</p>
+                    </div>
+                </div>
+                <p>
+                    This loss will be used to train the UNet, whose architecture, along with its
+                    operations, can be found below:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="unet.png" alt="Epoch 0" />
+                        <p>Architecture for the Unconditional UNet</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="unet_ops.png" alt="Epoch 0" />
+                        <p>Operations used in the UNet</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Using the UNet to Train a Denoiser</h2>
+                <p>
+                    We aim to train the denoiser on the previously mentioned L2 loss. First, we need
+                    to generate training pairs of (noisy MNIST digits, clean MNIST digits). For each
+                    training batch, we can generate these pairs using the following noising
+                    procedure:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="5b_noising.png" alt="Epoch 0" />
+                        <p>Noising Procedure for Generating Training Data Pairs</p>
+                    </div>
+                </div>
+                <p>
+                    Using this process, we can visualize the noising of different images over a
+                    range of sigma values, sigma=[0.0, 0.2, 0.4, 0.5, 0.6, 0.8. 1.0], where the
+                    digit gets noisier as it is samples from a Gaussian with a higher value of
+                    sigma. These digits are shown below:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="sigmas.png" alt="Epoch 0" />
+                        <p>A Visualization of the Noising Process</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Training</h2>
+                <p>
+                    Now we can proceed with the training. Our current goal is to train a denoiser to
+                    recover noisy images with sigma=0.5 applied to clean images. We will be using
+                    teh MNIST dataset and training only on the training set with batch_size=256 and
+                    epochs=5. Our model will be the UNet architecture described abve with
+                    hidden_dim=128. For our optimizer, we opt for Adam with learning_rate=1e-4.
+                    Below is the training loss curve plot for the training process with sigma=0.5,
+                    as well as a sample of results with sigma=0.5 after Epochs 1 and 5.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="121training.png" alt="Epoch 0" />
+                        <p>Training Loss Curve Plot on MNIST Dataset, Noise Level 0.5</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="121epoch1.png" alt="Epoch 0" />
+                        <p>Results on Digits after Epoch 1, Noise Level 0.5</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="121epoch5.png" alt="Epoch 0" />
+                        <p>Results on Digits after Epoch 5, Noise Level 0.5</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Out-of-Distribution Testing</h2>
+                <p>
+                    In the previous section, we tested on in-distribution samples. Our goal now is
+                    to see how our trained denoiser performs on out-of-distribution samples (where
+                    sigma is not necessary 0.5). Below are visualizations of these denoised results
+                    on digits across many different noise levels sigma=[0.0, 0.2, 0.4, 0.5, 0.6,
+                    0.8, 1.0]. As you can see, the results are poor for the highest noise levels,
+                    meaning that our current denoiser does not generalize.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="oodtesting.png" alt="Epoch 0" />
+                        <p>Results on Test Set, Out-of-Distribution Noise Levels</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Denoising Pure Noise</h2>
+                <p>
+                    In order to turn denoising into a generative task, we want to be able to denoise
+                    completely random, Gaussian noise. We will repeat the same training procedure,
+                    except we will now input pure noise and denoise for 5 epochs. Below is the
+                    training loss curve for this training session, as well as sampled results after
+                    Epochs 1 and 5.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="123training.png" alt="Epoch 0" />
+                        <p>Training Loss Curve Plot on MNIST Dataset, Pure Gaussian Noise</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="123epoch1.png" alt="Epoch 0" />
+                        <p>Results on Digits after Epoch 1, Pure Gaussian Noise</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="123epoch5.png" alt="Epoch 0" />
+                        <p>Results on Digits after Epoch 5, Pure Gaussian Noise</p>
+                    </div>
+                </div>
+                <p>
+                    For these generated outputs, I observed that the results resemble multiple
+                    digits morphed together. This makes sense, since our model is trying to minimize
+                    the L2 norm, or the sum of squared distances to the training examples.
+                    Therefore, the generated image is just a combination of a bunch of digits. More
+                    technically, we are generating from the centroid of many different digit
+                    clusters, revealing a malformed result.
+                </p>
+            </div>
+
+            <div class="section">
+                <h2>Adding Time Conditioning to UNet</h2>
+                <p>
+                    Since one-step denoising fails for generative tasks, we turn to iterative
+                    denoising. This is done via flow matching. We want our UNet to be able to
+                    predict the flow from the noisy image to the clean image. Specifically, we want
+                    to approximate the flow u(x_t, t) = x_1 - x_0, where x_1 ~ p_1 (x_1) is clean
+                    and x_0 ~ p_0 (x_0) is noisy. This gives us the following learning objective:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="flow_matching_loss.png" alt="Epoch 0" />
+                        <p>New Loss for Flow Matching</p>
+                    </div>
+                </div>
+                <p>
+                    We want to input t into our UNet in order to condition it. We do so via the
+                    following architecture:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="time_conditioning_unet.png" alt="Epoch 0" />
+                        <p>Architecture for the Time-Conditioned UNet</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="fc_block.png" alt="Epoch 0" />
+                        <p>The FCBlock</p>
+                    </div>
+                </div>
+
+                <p>
+                    This architecture uses a new component, the FCBlock (fully-connected block).
+                    Integrating this piece into the UNet can be done with the following pseudocode:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="tc_pseudocode.png" alt="Epoch 0" />
+                        <p>Pseudocode for Implementing Time Conditioning</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Training the UNet</h2>
+                <p>
+                    Now, we can move to training the time-conditioned UNet. The algorithm is
+                    essentially as follows: pick a clean image x_1 from the training set along with
+                    a random timestep t, get x_t by adding noise to x_1, and train the denoiser to
+                    predict the flow at x_t. This process continues until the model converges. This
+                    algorithm can also be seen below:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="alg_b1.png" alt="Epoch 0" />
+                        <p>Algorithm for Training a Time-Conditioned UNet</p>
+                    </div>
+                </div>
+                <p>
+                    Once again, our objective is to train a time-conditioned UNet to predict the
+                    flow at a noisy image x_t. We use the MNIST dataset and train on the training
+                    set with batch_size=64. The model is the time-conditioned UNet above with
+                    hidden_dim=64, and the optimizer of choice is Adam with learning_rate=1e-2 along
+                    with an exponential learning rate decay scheduler with
+                    gamma=0.1^{1.0/num_epochs}. The training loss curve plot for this training
+                    session can be seen below.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="22training.png" alt="Epoch 0" />
+                        <p>Training Loss Curve Plot for Time-Conditioned UNet</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Sampling from the UNet</h2>
+                <p>
+                    We can use our newly trained time-conditioned UNet to sample some digits for
+                    iterative denoising. This is detailed in the following algorithm:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="alg_b2.png" alt="Epoch 100" />
+                        <p>Algorithm for Sampling from a Time-Conditioned UNet</p>
+                    </div>
+                </div>
+                <p>
+                    Now, we visualize sampled results from the time-conditioned UNet for epochs 1,
+                    5, and 10.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="23samples1.png" alt="Epoch 100" />
+                        <p>Sampled Results from Time-Conditioned UNet, Epoch 1</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="23samples5.png" alt="Epoch 100" />
+                        <p>Sampled Results from Time-Conditioned UNet, Epoch 5</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="23samples10.png" alt="Epoch 100" />
+                        <p>Sampled Results from Time-Conditioned UNet, Epoch 10</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Adding Class-Conditioning to the UNet</h2>
+                <p>
+                    In order to improve the results, we condition the UNet on the actual digit class
+                    itself. This involves adding 2 more FCBlocks to the UNet, whose inputs are
+                    one-hot vectors of the digit class. We also implement a 10% dropout, where the
+                    class conditioned vector, c, is set to 0 with probability=0.1. This is done to
+                    allow the model to function properly even in the case where it is not being
+                    conditioned on a class. The pseudocode describing the necessary augmentations
+                    can be found below:
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="cc_pseudocode.png" alt="Epoch 0" />
+                        <p>Pseudocode for Implementing Class Conditioning</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Training the UNet</h2>
+                <p>
+                    The training procedure now is mostly unchanged, except for the additions of the
+                    conditioning vector, c, and dropout. The new algorithm is below, as well as the
+                    new training loss curve for the class-conditioned UNet.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="alg_b3.png" alt="Epoch 0" />
+                        <p>Algorithm for Training a Class-Conditioned UNet</p>
+                    </div>
+                </div>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="25training.png" alt="Epoch 0" />
+                        <p>Training Loss Curve Plot for Class-Conditioned UNet</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Sampling from the UNet</h2>
+                <p>
+                    Now that the class-conditioned UNet is trained, we can sample with class
+                    conditioning, using classifier-free guidance with gamma=5.0. This algorithm is
+                    detailed below, including a display of the samples it generates at epochs 1, 5,
+                    and 10.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="alg_b4.png" alt="Epoch 0" />
+                        <p>Algorithm for Sampling from a Class-Conditioned UNet</p>
+                    </div>
+                </div>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="26samples1.png" alt="Epoch 0" />
+                        <p>Sampled Results from Class-Conditioned UNet, Epoch 1</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="26samples5.png" alt="Epoch 0" />
+                        <p>Sampled Results from Class-Conditioned UNet, Epoch 5</p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="26samples10.png" alt="Epoch 0" />
+                        <p>Sampled Results from Class-Conditioned UNet, Epoch 10</p>
+                    </div>
+                </div>
+
+                <p>
+                    We can also get rid of the learning rate scheduler mentioned above. In order to
+                    keep denoised results satisfactory, I decreased the learning rate from 1e-2 to
+                    1e-3. Dialing back on the size of gradient descent steps allows for us
+                    to keep the stability that the learning rate schedule was meant to maintain. As
+                    usual, the training loss curve an sampled results for epochs 1, 5, and 10 can be
+                    found below. Surprisingly, the images look slightly better without the learning
+                    rate scheduler, and one could assume that these results would continue to
+                    improve as the number of epochs increases beyond 10.
+                </p>
+                <div class="image-grid">
+                    <div class="image-pair">
+                        <img src="25training_noLRs.png" alt="Epoch 0" />
+                        <p>Training Loss Curve Plot for Class-Conditioned UNet (No LR Scheduler)</p>
+                    </div>
+                </div>
+                <div class="image-grid-3">
+                    <div class="image-pair">
+                        <img src="26samples1_noLRs.png" alt="Epoch 0" />
+                        <p>
+                            Sampled Results from Class-Conditioned UNet, Epoch 1 (No LR Scheduler)
+                        </p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="26samples5_noLRs.png" alt="Epoch 0" />
+                        <p>
+                            Sampled Results from Class-Conditioned UNet, Epoch 5 (No LR Scheduler)
+                        </p>
+                    </div>
+                    <div class="image-pair">
+                        <img src="26samples10_noLRs.png" alt="Epoch 0" />
+                        <p>
+                            Sampled Results from Class-Conditioned UNet, Epoch 10 (No LR Scheduler)
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
